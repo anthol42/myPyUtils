@@ -215,8 +215,8 @@ class RGBColor(BaseColor):
 
 class BackgroundColor(RGBColor):
     """
-    This class is a subclass of Color, but using rgb colors.  Just pass the red value, green value and blue value
-    to the constructor.  Values must be between 0 and 255
+    This class is a subclass of RGBColor.  Just pass the red value, green value and blue value
+    to the constructor.  Values must be between 0 and 255. It will set the background color of the text.
     """
 
     @property

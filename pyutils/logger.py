@@ -1,4 +1,4 @@
-from .color import Color, ResetColor
+from .color import BaseColor, ResetColor
 from enum import Enum
 from typing import *
 import sys
@@ -15,7 +15,7 @@ class LoggerType(Enum):
 
 class LogKwargs:
     def __init__(self, sep: str = ' ', start: str = '',
-                 end: str = '\n', file=sys.stdout, flush=False, color: Optional[Color] = None):
+                 end: str = '\n', file=sys.stdout, flush=False, color: Optional[BaseColor] = None):
         self.sep = sep
         self.end = end
         self.start = start
@@ -111,7 +111,7 @@ class FatalFailure(Exception):
     pass
 class Logger:
     def __init__(self, T: LoggerType, logfile: Optional[str] = None, name: Optional[str] = None,
-                 logColor: Optional[Color] = None):
+                 logColor: Optional[BaseColor] = None):
         global NUM_LOGGERS
         self.T = T
         self.logfile = logfile
