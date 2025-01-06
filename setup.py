@@ -12,7 +12,7 @@ with open("pyutils/__version__.py", "r") as f:
     version = f.read().split("=")[1].strip().strip("\"")
 
 setup(
-    name="myPyUtils",
+    name="antho-utils",
     version=version,
     author="Anthony Lavertu",
     author_email="alavertu2@gmail.com",
