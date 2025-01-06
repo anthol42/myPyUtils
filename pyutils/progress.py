@@ -297,7 +297,7 @@ class progress:
             line_width = self.max_c
         line = f"{self.done_delim[0]}{self.done_charac * line_width}{self.done_charac}{self.done_delim[1]}  {ResetColor()}"
         if self.done_color is not None:
-            print(f"\r{self.done_color}" + preline + line + f"{self.done_color}" + postline, end=f"{ResetColor()}")
+            print(f"\r{self.done_color}" + preline + line + f"{self.done_color}" + postline, end=f"{ResetColor()}{self.end}")
         else:
             print("\r" + preline + line + postline, end=self.end)
 
@@ -372,6 +372,7 @@ progress.set_config(
     delim=(f"[{Color(208)}", f"{ResetColor()}]"),
     done_delim=(f"[{Color(40)}", f"{Color(247)}]"),
     done_charac=f"=",
+    end=""
 )
 progress.set_config(
     done_color=Color(247),

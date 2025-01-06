@@ -20,9 +20,9 @@ setup(
     description="useful utilities for python and datascience",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url=...,    # TODO
+    url="https://github.com/anthol42/myPyUtils/tree/main",
     project_urls={
-        "Issues": ...,    # TODO
+        "Issues": "https://github.com/anthol42/myPyUtils/issues",
     },
     classifiers=[
         "Programming Language :: Python :: 3",
