@@ -126,6 +126,10 @@ def format_sep(self: 'progress'):
     else:
         return " | "
 class ProgressConfig:
+    """
+    The configuration class for the progress bar. Each config is an instance of this object.
+    You should not interact directly with this class, but rather use the `progress.set_config` method.
+    """
     def __init__(self, desc: str = "", type: str = "default",
                  cu: str = "█", cd: str = " ", max_width: int = 50,
                  delim: Tuple[str, str] = ("|", "|"),
@@ -171,6 +175,37 @@ class ProgressConfig:
 
 
 class progress:
+    """
+    The progress bar class. This class can be used as a replacement to tqdm. I believe it is more flexible than tqdm, and,
+    as you will see, pretty handy. The code is also short with less than 500 lines. I believe its most important feature
+    is its customizability. You can almost change everything in the progress bar, so you can easily make your own
+    personal progress bar.
+
+    # Customization
+    To understand how to customoze the bar, you need to understand a design choice concept. Everything except the bar itself
+    is a widget. Widgets are a callback function that takes a progress object as parameter and return a string. I will
+    explain more about widgets shortly. The progress bar itself can be modified with different parameters. You can specify
+    which characters you want to use for the bar.
+
+    The widgets, or callback functions are used to display information complementary to the progress bar. For example,
+    the tqdm progress bar displays the percentage, the total, the eta, etc. These are widgets. You can add your own
+    widgets. There are two parameters that accept widgets: `pre_cb` and `post_cb`. The `pre_cb` widgets are displayed
+    before the progress bar, and the `post_cb` widgets are displayed after the progress bar. You can add as many widgets
+    as you want. The widgets are called with the progress object as parameter and must return a string.
+
+    If you would like to see example on how to customize the progress bar, take a look at the end of this file,
+    two types of progress bar are implemented: `pip` and `dl`. The `pip` progress bar is a progress bar that is similar
+    to the one used in pip. The `dl` progress bar is a progress bar that is more suited for deep learning tasks.
+
+    ## More than one configuration
+    You can use as many configuration as you like, without overwriting the default configuration. To do so, you can specify
+    the type parameter of the `set_config` method. Then, to use the configuration you want, you can specify the type parameter
+    of the progress object. For example, if you have a configuration named `dl`, you can use it like this:
+    ```
+    for i in progress(range(100), type="dl"):
+        ... // computations
+    ```
+    """
     CONFIGS = {
         "default": ProgressConfig()
     }
@@ -194,6 +229,7 @@ class progress:
                    done_color: Optional[BaseColor] = None,
                    pre_cb: Optional[Sequence[Callable[['progress'], str]]] = None,
                    post_cb: Optional[Sequence[Callable[['progress'], str]]] = None):
+        # TODO: Explain each parameters
         def_cfg = deepcopy(cls.CONFIGS["default"])
         cls.CONFIGS[type] = ProgressConfig(
             desc=desc if desc is not None else def_cfg.desc,
