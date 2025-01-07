@@ -26,23 +26,24 @@ class Color(BaseColor):
 class ColorTheme:
     def __init__(self,
                  accent: Optional[BaseColor] = Color(12),
-                 text: Optional[BaseColor] = Color(253),
+                 text: Optional[BaseColor] = Color(250),
                  error: Optional[BaseColor] = Color(203),
-                 warning: Optional[BaseColor] = Color(220),
-                 success: Optional[BaseColor] = Color(76),
-                 link: Optional[BaseColor] = Color(33),
+                 warning: Optional[BaseColor] = Color(208),
+                 success: Optional[BaseColor] = Color(40),
+                 link: Optional[BaseColor] = Color(39),
                  white: Optional[BaseColor] = Color(15),
                  black: Optional[BaseColor] = Color(0),
                  red: Optional[BaseColor] = Color(196),
-                 blue: Optional[BaseColor] = Color(21),
+                 blue: Optional[BaseColor] = Color(33),
                  green: Optional[BaseColor] = Color(40),
-                 yellow: Optional[BaseColor] = Color(11),
+                 yellow: Optional[BaseColor] = Color(220),
                  cyan: Optional[BaseColor] = Color(51),
                  magenta: Optional[BaseColor] = Color(201),
                  brown: Optional[BaseColor] = Color(130),
                  orange: Optional[BaseColor] = Color(202),
                  purple: Optional[BaseColor] = Color(129),
                  pink: Optional[BaseColor] = Color(13),
+                 darken: Optional[BaseColor] = Color(240),
                 ):
         self.accent = accent
         self.text = text
@@ -62,6 +63,7 @@ class ColorTheme:
         self.orange = orange
         self.purple = purple
         self.pink = pink
+        self.darken = darken
 
     def set_theme(self, accent: Optional[BaseColor] = None,
                   text: Optional[BaseColor] = None,
@@ -80,7 +82,9 @@ class ColorTheme:
                   brown: Optional[BaseColor] = None,
                   orange: Optional[BaseColor] = None,
                   purple: Optional[BaseColor] = None,
-                  pink: Optional[BaseColor] = None, **kwargs):
+                  pink: Optional[BaseColor] = None,
+                  darken: Optional[BaseColor] = None,
+                  **kwargs):
         """
         Set the color theme
         """
@@ -102,6 +106,7 @@ class ColorTheme:
         self.orange = orange or self.orange
         self.purple = purple or self.purple
         self.pink = pink or self.pink
+        self.darken = darken or self.darken
 
         for new_color in kwargs:
             self.register_color(new_color, kwargs[new_color])
@@ -327,26 +332,26 @@ def main_func():
 
 if __name__ == '__main__':
     # Theme inspired by Nord Theme, made by ChatGPT (Works for True color terminals)
-    Colors.set_theme(
-        accent=RGBColor(143, 188, 187),  # Frost - Teal
-        text=RGBColor(216, 222, 233),  # Snow Storm - Main text
-        error=RGBColor(220, 70, 80),  # Flashy Error - Bright Crimson
-        warning=RGBColor(255, 170, 50),  # Flashy Warning - Golden Orange
-        success=RGBColor(100, 220, 120),  # Flashy Success - Emerald Green
-        link=RGBColor(136, 192, 208),  # Frost - Light Blue
-        white=RGBColor(236, 239, 244),  # Snow Storm - Bright text
-        black=RGBColor(46, 52, 64),  # Polar Night - Dark background
-        red=RGBColor(191, 97, 106),  # Aurora - Red
-        blue=RGBColor(94, 129, 172),  # Frost - Dark Blue
-        green=RGBColor(163, 190, 140),  # Aurora - Green
-        yellow=RGBColor(235, 203, 139),  # Aurora - Yellow
-        cyan=RGBColor(143, 188, 187),  # Frost - Teal
-        magenta=RGBColor(180, 142, 173),  # Aurora - Purple
-        brown=RGBColor(121, 85, 72),  # Invented Brown
-        orange=RGBColor(208, 135, 112),  # Aurora - Orange
-        purple=RGBColor(180, 142, 173),  # Aurora - Purple
-        pink=RGBColor(216, 155, 176)  # Invented Pink
-    )
+    # Colors.set_theme(
+    #     accent=RGBColor(143, 188, 187),  # Frost - Teal
+    #     text=RGBColor(216, 222, 233),  # Snow Storm - Main text
+    #     error=RGBColor(220, 70, 80),  # Flashy Error - Bright Crimson
+    #     warning=RGBColor(255, 170, 50),  # Flashy Warning - Golden Orange
+    #     success=RGBColor(100, 220, 120),  # Flashy Success - Emerald Green
+    #     link=RGBColor(136, 192, 208),  # Frost - Light Blue
+    #     white=RGBColor(236, 239, 244),  # Snow Storm - Bright text
+    #     black=RGBColor(46, 52, 64),  # Polar Night - Dark background
+    #     red=RGBColor(191, 97, 106),  # Aurora - Red
+    #     blue=RGBColor(94, 129, 172),  # Frost - Dark Blue
+    #     green=RGBColor(163, 190, 140),  # Aurora - Green
+    #     yellow=RGBColor(235, 203, 139),  # Aurora - Yellow
+    #     cyan=RGBColor(143, 188, 187),  # Frost - Teal
+    #     magenta=RGBColor(180, 142, 173),  # Aurora - Purple
+    #     brown=RGBColor(121, 85, 72),  # Invented Brown
+    #     orange=RGBColor(208, 135, 112),  # Aurora - Orange
+    #     purple=RGBColor(180, 142, 173),  # Aurora - Purple
+    #     pink=RGBColor(216, 155, 176)  # Invented Pink
+    # )
     print(Colors)
     print(ColorPalette())
     # print(f"{Color(154)}I am colored :) {ResetColor()} And I am not colored :(")
