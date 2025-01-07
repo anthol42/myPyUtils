@@ -48,3 +48,5 @@ if __name__ == "__main__":
 
 ## packages
 - [Color](Color.md)
+- [ConfigFile](ConfigFile.md)
+- [Logger](Logger.md)

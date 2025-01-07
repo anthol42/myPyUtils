@@ -110,8 +110,19 @@ class LogConfig:
 class FatalFailure(Exception):
     pass
 class Logger:
+    """
+    Class to create a callback function that has a similar interface to the print function. However, you can customize
+    how it prints the data. You can also log to a file if needed, where all the logs are stored.
+    """
     def __init__(self, T: LoggerType, logfile: Optional[str] = None, name: Optional[str] = None,
                  logColor: Optional[BaseColor] = None):
+        """
+        Initialize the logger
+        :param T: The type of the logger
+        :param logfile: The file to log to, if None, it will not log to a file
+        :param name: The name of the logger. If None, it will be Logger_{NUM_LOGGERS}
+        :param logColor: The color to log the text, by default.
+        """
         global NUM_LOGGERS
         self.T = T
         self.logfile = logfile
@@ -129,6 +140,26 @@ class Logger:
                time_formatter: Callable[[datetime], Tuple[str, bool]] = lambda x: (f'[{x}]', False),
                origin_formatter: str = "<END>From: {} -- line no {}",
                start_sep: str = " -- ", end_sep: str = " | ", console: bool = True):
+        """
+        Configure the logger.
+        # Formatters
+        You can specify formatters for the name, type, time, and origin of the logger. The formatters are strings
+        that can contains special keywords that will define how the string is formatted. The special keywords are:
+        - <CAPS>: Capitalize the string
+        - <END>: Append the string to the end of the log
+        :param show_name: Show the name of the logger
+        :param show_type: Show the type of the logger
+        :param show_time: Show the time of the log
+        :param show_origin: Show the origin of the log: The file and the line number
+        :param name_formatter: The format of the name of the logger
+        :param type_formatter: The format of the type of the logger
+        :param time_formatter: The format of the time of the logger
+        :param origin_formatter: The format of the origin of the logger
+        :param start_sep: The separator between the generic info such as the name, the date, etc, and the start of the log
+        :param end_sep: The separator between the log and the generic info that are appended.
+        :param console: Whether to print to the console or not.
+        :return: None
+        """
         self.CONFIG.init(console, show_name, show_type, show_time, show_origin, name_formatter, type_formatter, time_formatter,
                         origin_formatter, start_sep, end_sep)
     def decorate(self, s: str):
@@ -164,6 +195,10 @@ class Logger:
         return s
 
     def __call__(self, *args, **kwargs):
+        """
+        Same signature as the print function.
+        Will print the log to the console and to the file if needed, according to the configuration format.
+        """
         kwargs = LogKwargs(**kwargs)
 
         # Format the string
