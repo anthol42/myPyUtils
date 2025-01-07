@@ -56,7 +56,7 @@ will override the default theme. Colors that aren't specified or are set to None
 example that will define a Nord-like theme (Note: your terminal needs to support TrueColor to use this theme since it 
 used RGBColors):
 ```python
-    # Theme inspired by Nord Theme, made by ChatGPT (Works for True color terminals)
+    # Theme inspired by Nord Theme, made by ChatGPT (Works only in True color terminals)
     Colors.set_theme(
         accent=RGBColor(143, 188, 187),  # Frost - Teal
         text=RGBColor(216, 222, 233),  # Snow Storm - Main text
