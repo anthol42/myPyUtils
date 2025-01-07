@@ -25,7 +25,7 @@ class Color(BaseColor):
 
 class ColorTheme:
     def __init__(self,
-                 accent: Optional[BaseColor] = Color(12),
+                 accent: Optional[BaseColor] = Color(39),
                  text: Optional[BaseColor] = Color(250),
                  error: Optional[BaseColor] = Color(203),
                  warning: Optional[BaseColor] = Color(208),
@@ -39,11 +39,11 @@ class ColorTheme:
                  yellow: Optional[BaseColor] = Color(220),
                  cyan: Optional[BaseColor] = Color(51),
                  magenta: Optional[BaseColor] = Color(201),
-                 brown: Optional[BaseColor] = Color(130),
+                 brown: Optional[BaseColor] = Color(3),
                  orange: Optional[BaseColor] = Color(202),
                  purple: Optional[BaseColor] = Color(129),
                  pink: Optional[BaseColor] = Color(13),
-                 darken: Optional[BaseColor] = Color(240),
+                 darken: Optional[BaseColor] = Color(242),
                 ):
         self.accent = accent
         self.text = text

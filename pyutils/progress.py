@@ -1,6 +1,6 @@
 import time
 from datetime import datetime, timedelta
-from .color import Color, ResetColor
+from .color import BaseColor, Color, Colors, ResetColor
 import math
 from typing import *
 import shutil
@@ -16,6 +16,19 @@ def format_seconds_to_hms(seconds):
         return f"{minutes:02}:{seconds:02}"
     else:
         return f"{hours:02}:{minutes:02}:{seconds:02}"
+
+def pretty_time_format(seconds: float):
+    """
+    Format the seconds like: 1h 30m or 30m 20s or 20s
+    :param seconds: The seconds to format
+    :return: The formatted string
+    """
+    if seconds < 60:
+        return f"{seconds:.0f}s"
+    elif seconds < 3600:
+        return f"{seconds // 60:.0f}m {seconds % 60:.0f}s"
+    else:
+        return f"{seconds // 3600:.0f}h {(seconds % 3600) // 60:.0f}m"
 
 def format_percent(self: 'progress'):
     return f"{(self.count / self.total) * 100:.0f}%"
@@ -39,7 +52,7 @@ def format_eta(self: 'progress'):
         return f"[{format_seconds_to_hms(elapsed)}<{format_seconds_to_hms(eta)}, {it_per_sec:.2f}it/s]"
 
 def format_added_values(self: 'progress'):
-    return " ".join([f"{k}: {v:.3f}" for k, v in self.added_values.items() if isinstance(v, float) or isinstance(v, int)])
+    return "  ".join([f"{k}: {v:.4f}" for k, v in self.added_values.items() if isinstance(v, float) or isinstance(v, int)])
 
 # --------------------- Pip progress bar CB--------------------- #
 
@@ -64,6 +77,54 @@ def format_pip_eta(self: 'progress'):
     return f"eta {Color(6)}{format_seconds_to_hms(eta)}{ResetColor()}"
 
 
+# --------------------- DL progress bar CB--------------------- #
+def format_time_per_step(self: 'progress'):
+    """
+    Format in this style: 2ms/step
+    """
+    color = self.done_color if self.iter_ended else Colors.brown
+    if color is None:
+        color = Colors.brown
+    if self.ema == 0:
+        return f"{color}NA/step{ResetColor()}"
+    else:
+        time_per_step = self.ema
+        if time_per_step < 1e-6:
+            time_per_step *= 1e9
+            return f"{color}{time_per_step:.2f} ns/step{ResetColor()}"
+        elif time_per_step < 1e-3:
+            time_per_step *= 1e6
+            return f"{color}{time_per_step:.2f} µs/step{ResetColor()}"
+        elif time_per_step < 1:
+            time_per_step *= 1e3
+            return f"{color}{time_per_step:.2f} ms/step{ResetColor()}"
+        else:
+            return f"{color}{time_per_step:.2f} s/step{ResetColor()}"
+
+def format_dl_eta(self: 'progress'):
+    """
+    While training, the eta is shown: 9s; when done, it shows the elapsed time: 1h 30m
+    """
+    if self.ema == 0:
+        return f"{Colors.accent}NA{ResetColor()}"
+    elapsed = (datetime.now() - self.start_time).total_seconds()
+    if self.iter_ended:
+        if self.done_color is not None:
+            return f"{self.done_color}{pretty_time_format(elapsed)}{ResetColor()}"
+        else:
+            return f"{Colors.accent}{pretty_time_format(elapsed)}{ResetColor()}"
+    else:
+        eta = (self.total - self.count) * self.ema
+        return f"{Colors.accent}{pretty_time_format(eta)}{ResetColor()}"
+
+def format_sep(self: 'progress'):
+    """
+    Format a separator: ' | ' that appears only if there are added values
+    """
+    if len(self.added_values) == 0:
+        return ""
+    else:
+        return " | "
 class ProgressConfig:
     def __init__(self, desc: str = "", type: str = "default",
                  cu: str = "█", cd: str = " ", max_width: int = 50,
@@ -85,8 +146,8 @@ class ProgressConfig:
                          format_eta,
                          format_added_values
                  ),
-                 color: Optional[Color] = None,
-                 done_color: Optional[Color] = None):
+                 color: Optional[BaseColor] = None,
+                 done_color: Optional[BaseColor] = None):
         self.desc = desc
         self.name = type
         self.cu = cu
@@ -129,8 +190,8 @@ class progress:
                    enum: Optional[bool] = None,
                    ref: Optional[bool] = None,
                    ignore_term_width: Optional[bool] = None,
-                   color: Optional[Color] = None,
-                   done_color: Optional[Color] = None,
+                   color: Optional[BaseColor] = None,
+                   done_color: Optional[BaseColor] = None,
                    pre_cb: Optional[Sequence[Callable[['progress'], str]]] = None,
                    post_cb: Optional[Sequence[Callable[['progress'], str]]] = None):
         def_cfg = deepcopy(cls.CONFIGS["default"])
@@ -171,8 +232,8 @@ class progress:
                  enum: Optional[bool] = None,
                  ref: Optional[bool] = None,
                  ignore_term_width: Optional[bool] = None,
-                 color: Optional[Color] = None,
-                 done_color: Optional[Color] = None,
+                 color: Optional[BaseColor] = None,
+                 done_color: Optional[BaseColor] = None,
                  pre_cb: Optional[Sequence[Callable[['progress'], str]]] = None,
                  post_cb: Optional[Sequence[Callable[['progress'], str]]] = None,
                 **kwargs):
@@ -210,7 +271,7 @@ class progress:
         self.prev_step: Optional[datetime] = None
         self.last_display: Optional[datetime] = None
         self.ema = 0
-        self.smoothing_factor = 2/(1 + self.total / 10) if self.total is not None else 2/(1+100)
+        self.smoothing_factor = 2/(1 + self.total) if self.total is not None else 2/(1+100)
 
         # Callbacks
         self.pre_cb = pre_cb if pre_cb is not None else config.pre_cb
@@ -220,6 +281,7 @@ class progress:
         self.count = 0
         self.last_count: Optional[int] = None
         self.has_initialized = False
+        self.iter_ended = False
 
     def __iter__(self):
         return self
@@ -243,6 +305,7 @@ class progress:
             return self.return_fn(ne)
 
         except StopIteration:
+            self.iter_ended = True
             # Display done bar
             self.display_done_bar()
             raise StopIteration
@@ -350,9 +413,12 @@ class progress:
         return " ".join(pre)
 
     def make_postline(self):
+        color = self.done_color if self.iter_ended else self.color
+        if color is None:
+            color = ResetColor()
         post = []
         for cb in self.post_cb:
-            post.append(cb(self))
+            post.append(str(color) + cb(self))
 
         return " ".join(post)
 
@@ -361,18 +427,25 @@ def prange(*args, **kwargs):
 
 
 progress.set_config(
-    done_color=Color(247),
+    done_color=Colors.darken,
     type="dl",
-    cursors=(f">{Color(240)}", ),
+    cursors=(f">{Colors.darken}", ),
     cu="=",
     cd="-",
     max_width=40,
     # refresh_rate=0.01,
     ignore_term_width="PYCHARM_HOSTED" in os.environ,
-    delim=(f"[{Color(208)}", f"{ResetColor()}]"),
-    done_delim=(f"[{Color(40)}", f"{Color(247)}]"),
+    delim=(f"[{Colors.orange}", f"{ResetColor()}]"),
+    done_delim=(f"[{Colors.success}", f"{Colors.darken}]"),
     done_charac=f"=",
-    end=""
+    end="",
+    post_cb=(
+            format_total,
+            format_dl_eta,
+            format_time_per_step,
+            format_sep,
+            format_added_values
+        )
 )
 progress.set_config(
     done_color=Color(247),
