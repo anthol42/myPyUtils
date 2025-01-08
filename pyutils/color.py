@@ -35,7 +35,7 @@ class ColorTheme:
                  black: Optional[BaseColor] = Color(0),
                  red: Optional[BaseColor] = Color(196),
                  blue: Optional[BaseColor] = Color(33),
-                 green: Optional[BaseColor] = Color(40),
+                 green: Optional[BaseColor] = Color(34),
                  yellow: Optional[BaseColor] = Color(220),
                  cyan: Optional[BaseColor] = Color(51),
                  magenta: Optional[BaseColor] = Color(201),

@@ -82,9 +82,9 @@ def format_time_per_step(self: 'progress'):
     """
     Format in this style: 2ms/step
     """
-    color = self.done_color if self.iter_ended else Colors.brown
+    color = self.done_color if self.iter_ended else Colors.green
     if color is None:
-        color = Colors.brown
+        color = Colors.green
     if self.ema == 0:
         return f"{color}NA/step{ResetColor()}"
     else:
