@@ -50,3 +50,8 @@ if __name__ == "__main__":
 - [Color](Color.md)
 - [ConfigFile](ConfigFile.md)
 - [Logger](Logger.md)
+- [Progress](Progress.md)
+
+## Questions?
+If you have any questions, or you find bugs, feel free to ask them in the issues section of the repository. I will be 
+happy to help you.

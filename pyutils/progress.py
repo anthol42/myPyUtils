@@ -229,7 +229,47 @@ class progress:
                    done_color: Optional[BaseColor] = None,
                    pre_cb: Optional[Sequence[Callable[['progress'], str]]] = None,
                    post_cb: Optional[Sequence[Callable[['progress'], str]]] = None):
-        # TODO: Explain each parameters
+        """
+        Set the configuration of the progress bar. Set a new type name to create a new configuration. If the type already
+        exists, it will overwrite the previous configuration.
+        :param type: The name of the configuration
+        :param desc: The default description of the progress bar
+        :param cu: The upstream character of the progress bar (left)
+        :param cd: The downstream character of the progress bar (right)
+        :param max_width: The maximum width of the progress bar (Number of characters). By default, if the terminal window
+        is smaller than the max width, the progress bar will shrink to fit the terminal window. If you want to disable
+        this behavior, you can set the `ignore_term_width` parameter to True.
+        :param delim: The delimiters of the progress bar top left and top right characters
+        :param done_delim: The delimiters of the done progress bar top left and top right characters, but when the progress
+        bar is done. (you can have a different style or color for the done progress bar)
+        :param done_charac: The character used to fill the progress bar when the progress bar is done
+        :param cursors: A sequence of characters that are used to fill the progress bar. The progress bar is filled with
+        the cursor that corresponds to the remainder of the progress. Using multiple characters in the sequence will make
+        a smoother progress bar.
+        :param refresh_rate: The refresh rate of the progress bar in seconds In other words, it is the minimum delay between
+        each display update of the progress bar. If the progress bar is updated too frequently, it can slow down the program.
+        :param end: The character that is added at the end of the progress bar when it is completed. By default, it is
+        a newline character.
+        :param enum: If set t true, it will return the index of the iteration bar. It is equivalent to do:
+        for i, x in enumerate(progress(...)):
+
+        You can also set the enum parameter by calling the enum() method. Example:
+        for i, x in progress(...).enum():
+        :param ref: It will return a reference to the progress bar in the for loop. Example:
+        for prg, x in progress(..., ref=True):
+
+        You can also set the ref parameter by calling the ref() method. Example:
+        for prg, x in progress(...).ref():
+        :param ignore_term_width: If set to true, the progress bar will not shrink to fit the terminal window. It will be
+        fixed to the max width.
+        :param color: The color of the progress bar. By default, the default terminal color is used.
+        :param done_color: The color of the progress bar when it is done. By default, the default terminal color is used.
+        :param pre_cb: The ordered list of callback functions that are called before the progress bar. The callback functions
+        must take a progress object as parameter and return a string. The strings are concatenated to form the preline.
+        :param post_cb: The ordered list of callback functions that are called after the progress bar. The callback functions
+        must take a progress object as parameter and return a string. The strings are concatenated to form the postline.
+        :return: None
+        """
         def_cfg = deepcopy(cls.CONFIGS["default"])
         cls.CONFIGS[type] = ProgressConfig(
             desc=desc if desc is not None else def_cfg.desc,
