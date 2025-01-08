@@ -35,6 +35,29 @@ Colors.set_theme(
 )
 # Configure the traceback formatting tool
 sys.excepthook = TraceBackColor()
+
+# Configure the progress bar
+progress.set_config(
+    done_color=Color(247),
+    type="pip",
+    cursors=(f"{Color(8)}╺", f"╸{Color(8)}"),
+    cu="━",
+    cd="━",
+    max_width=40,
+    # refresh_rate=0.01,
+    ignore_term_width="PYCHARM_HOSTED" in os.environ,
+    delim=(f"   {Color(197)}", f"{ResetColor()}"),
+    done_delim=(f"   {Color(10)}", f"{ResetColor()}"),
+    done_charac=f"━",
+    pre_cb=(
+        format_desc,
+    ),
+    post_cb=(
+        format_pip_total,
+        format_speed,
+        format_pip_eta
+    )
+)
 ```
 - main.py
 ```python
