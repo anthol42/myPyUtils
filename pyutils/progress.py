@@ -141,6 +141,7 @@ class ProgressConfig:
                  enum: bool = False,
                  ref: bool = False,
                  ignore_term_width: bool = False,
+                 display: bool = True,
                  pre_cb: Sequence[Callable[['progress'], str]] = (
                          format_desc,
                          format_percent,
@@ -170,6 +171,7 @@ class ProgressConfig:
         self.post_cb = post_cb
         self.color = color
         self.done_color = done_color
+        self.display = display
 
 
 
@@ -227,6 +229,7 @@ class progress:
                    ignore_term_width: Optional[bool] = None,
                    color: Optional[BaseColor] = None,
                    done_color: Optional[BaseColor] = None,
+                   display: Optional[bool] = None,
                    pre_cb: Optional[Sequence[Callable[['progress'], str]]] = None,
                    post_cb: Optional[Sequence[Callable[['progress'], str]]] = None):
         """
@@ -264,6 +267,7 @@ class progress:
         fixed to the max width.
         :param color: The color of the progress bar. By default, the default terminal color is used.
         :param done_color: The color of the progress bar when it is done. By default, the default terminal color is used.
+        :param: display: If False, the progress bar won't be displayed to the console.
         :param pre_cb: The ordered list of callback functions that are called before the progress bar. The callback functions
         must take a progress object as parameter and return a string. The strings are concatenated to form the preline.
         :param post_cb: The ordered list of callback functions that are called after the progress bar. The callback functions
@@ -289,7 +293,8 @@ class progress:
             pre_cb=pre_cb if pre_cb is not None else def_cfg.pre_cb,
             post_cb=post_cb if post_cb is not None else def_cfg.post_cb,
             color=color if color is not None else def_cfg.color,
-            done_color=done_color if done_color is not None else def_cfg.done_color
+            done_color=done_color if done_color is not None else def_cfg.done_color,
+            display=display if display is not None else def_cfg.display
         )
 
     def __init__(self, it: Optional[Iterable] = None, *,
@@ -310,6 +315,7 @@ class progress:
                  ignore_term_width: Optional[bool] = None,
                  color: Optional[BaseColor] = None,
                  done_color: Optional[BaseColor] = None,
+                 display: Optional[bool] = None,
                  pre_cb: Optional[Sequence[Callable[['progress'], str]]] = None,
                  post_cb: Optional[Sequence[Callable[['progress'], str]]] = None,
                 **kwargs):
@@ -333,6 +339,7 @@ class progress:
         self.ignore_term_width = ignore_term_width if ignore_term_width is not None else config.ignore_term_width
         self.color = color if color is not None else config.color
         self.done_color = done_color if done_color is not None else config.done_color
+        self.display = display if display is not None else config.display
 
         if total is None:
             try:
@@ -377,13 +384,15 @@ class progress:
                 return self.return_fn(ne)
 
             # Display progress bar
-            self.display_loading_bar()
+            if self.display:
+                self.display_loading_bar()
             return self.return_fn(ne)
 
         except StopIteration:
             self.iter_ended = True
             # Display done bar
-            self.display_done_bar()
+            if self.display:
+                self.display_done_bar()
             raise StopIteration
 
     def prep_step_duration(self):
@@ -449,10 +458,11 @@ class progress:
         self.prep_step_duration()
 
         # Display progress bar
-        if self.count >= self.total:
-            self.display_done_bar()
-        else:
-            self.display_loading_bar()
+        if self.display:
+            if self.count >= self.total:
+                self.display_done_bar()
+            else:
+                self.display_loading_bar()
 
     def return_fn(self, ne):
         if self._enum and self._ref:
