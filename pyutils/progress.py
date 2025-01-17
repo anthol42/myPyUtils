@@ -6,6 +6,7 @@ from typing import *
 import shutil
 from copy import deepcopy
 import os
+import re
 
 # --------------------- Default/tqdm progress bar CB--------------------- #
 def format_seconds_to_hms(seconds):
@@ -413,10 +414,19 @@ class progress:
                 self.ema = self.smoothing_factor * step_duration + (1 - self.smoothing_factor) * self.ema
             self.prev_step = datetime.now()
 
+    @staticmethod
+    def esc_len(s: str) -> int:
+        """
+        Compute the length of only visible characters of a string (Ignore the color escape characters)
+        """
+        exp = r'\x1b\[.*?m'
+        raw = re.sub(exp, '', s).rstrip()
+        return len(raw)
+
     def display_loading_bar(self):
         preline = self.make_preline()
         postline = self.make_postline()
-        line_width = self.get_term_width() - len(preline) - len(postline) - 5
+        line_width = self.get_term_width() - self.esc_len(preline) - self.esc_len(postline) - 5
         if line_width < 0:
             line_width = 0
         if line_width > self.max_c:
@@ -431,22 +441,34 @@ class progress:
         self.last_display = datetime.now()
         line = f"{self.delim[0]}{self.cu * cursor_pos}{cursor}{self.cd * (line_width - cursor_pos)}{self.delim[1]}  {ResetColor()}"
         if self.color is not None:
+            # Clear console
+            print(f"\r\033[K", end="")
+            # Display the line
             print(f"\r{self.color}" + preline + line + f"{self.color}" + postline, end=f"{ResetColor()}")
         else:
+            # Clear console
+            print(f"\r\033[K", end="")
+            # Display the line
             print("\r" + preline + line + postline, end="")
 
     def display_done_bar(self):
         preline = self.make_preline()
         postline = self.make_postline()
-        line_width = self.get_term_width() - len(preline) - len(postline) - 5
+        line_width = self.get_term_width() - self.esc_len(preline) - self.esc_len(postline) - 5
         if line_width < 0:
             line_width = 0
         if line_width > self.max_c:
             line_width = self.max_c
         line = f"{self.done_delim[0]}{self.done_charac * line_width}{self.done_charac}{self.done_delim[1]}  {ResetColor()}"
         if self.done_color is not None:
+            # Clear console
+            print(f"\r\033[K", end="")
+            # Display the line
             print(f"\r{self.done_color}" + preline + line + f"{self.done_color}" + postline, end=f"{ResetColor()}{self.end}")
         else:
+            # Clear console
+            print(f"\r\033[K", end="")
+            # Display the line
             print("\r" + preline + line + postline, end=self.end)
 
     def update(self, current: int, **kwargs):

@@ -1,5 +1,7 @@
+## 0.0.3
+- ```progress bar```: Fixed the auto-sizing (Now it should be accurate) + Remove trailing characters
 ## 0.0.2
-- ```progrss display parameter```: Progress api now has a display parameter that, if set to true, can make the bar hidden.
+- ```progress display parameter```: Progress api now has a display parameter that, if set to true, can make the bar hidden.
 ## 0.0.1
 - ```ColorPalette``` is now available as top-level import
 - ```Colors``` Theme now has the darken color field by default
