@@ -64,6 +64,7 @@ class ColorTheme:
         self.purple = purple
         self.pink = pink
         self.darken = darken
+        self.reset = ResetColor()
 
     def set_theme(self, accent: Optional[BaseColor] = None,
                   text: Optional[BaseColor] = None,
