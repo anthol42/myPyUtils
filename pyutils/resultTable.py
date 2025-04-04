@@ -128,7 +128,19 @@ class LogWriter:
         :param kwargs: The metrics to save
         :return: None
         """
-        pass
+        # Start by flushing the buffer
+        for tag in self.buffer.keys():
+            self._flush(tag)
+
+        # Then, prepare the data to save
+        query = "INSERT INTO Results (run_id, metric, value) VALUES (?, ?, ?)"
+        data = [(self.run_id, key, value) for key, value in kwargs.items()]
+        with self._cursor as cursor:
+            cursor.executemany(query, data)
+
+
+        # Disable the logger
+        self.enabled = False
 
     def _get_global_step(self, tag):
         """
@@ -214,7 +226,7 @@ class ResultTable:
 
     def load_run(self, run_id):
         logwriter = LogWriter(self.db_path, run_id, datetime.now())
-        logwriter.readonly = False  # We cannot log with a used writer
+        logwriter.enabled = False  # We cannot log with a used writer
         return logwriter
     def new_run(self, experiment_name: str,
                 config_path: Union[str, PurePath],
@@ -239,7 +251,7 @@ class ResultTable:
         config_str = str(config_path)
         config_hash = self.get_file_hash(config_path)
         comment = "" if comment is None else comment
-        cli = " ".join([f'{key}={value}' for key, value in cli.values()])
+        cli = " ".join([f'{key}={value}' for key, value in cli.items()])
         with self.cursor as cursor:
             # Step 1: Check if the configuration already exists
             cursor.execute("""
@@ -279,6 +291,26 @@ class ResultTable:
             rows = cursor.fetchall()
             for row in rows:
                 print(row)
+    def get_results(self, run_id: Optional[int] = None) -> Dict[int, Dict[str, float]]:
+        """
+        Get the result table as a dict
+        :param run_id: the run id. If none is specified, it fetches all results
+        :return: A dict of dick, where the first set of keys is the runID and the second one is the metric names
+        """
+        out = {}
+        with self.cursor as cursor:
+            if run_id is None:
+                cursor.execute("SELECT * FROM Results")
+            else:
+                cursor.execute("SELECT * FROM Results WHERE run_id=?", (run_id, ))
+            rows = cursor.fetchall()
+
+        for row in rows:
+            run_id, metric, value = row[1], row[2], row[3]
+            if run_id not in out:  # Run id already stored
+                out[run_id] = {}
+            out[run_id][metric] = value
+        return out
 
     @property
     def cursor(self):
@@ -317,7 +349,7 @@ class ResultTable:
         # Create Results table
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS Results (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_ INTEGER PRIMARY KEY AUTOINCREMENT,
             run_id INTEGER NOT NULL,
             metric varchar(128) NOT NULL,
             value REAL NOT NULL,
@@ -352,16 +384,19 @@ if __name__ == "__main__":
     rtable = ResultTable()
     cli = {}
     start = datetime.now()
-    # writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli)
-    writer = rtable.load_run(2)
-    print(writer.run_id)
-    val_step = [s.value for s in writer.read_scalar("Valid/acc")]
-    train_step = [s.value for s in writer.read_scalar("Train/acc")]
-    print(train_step)
-    print(val_step)
-    # for i in range(100):
-    #     writer.add_scalar("Train/acc", 2 * i / 100, i)
-    #     writer.add_scalar("Valid/acc", 2 * i / 100, walltime=(datetime.now() - start).total_seconds())
-    #     writer.add_scalar("Test/acc", 2 * i / 100, epoch=1)
-    #     time.sleep(1)
-    #     print(i)
+    writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli)
+    # writer = rtable.load_run(1)
+    # print(writer.run_id)
+    # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
+    # train_step = [s.value for s in writer.read_scalar("Train/acc")]
+    # print(train_step)
+    # print(val_step)
+    for i in range(100):
+        writer.add_scalar("Train/acc", 2 * i / 100, i)
+        writer.add_scalar("Valid/acc", 2 * i / 100, walltime=(datetime.now() - start).total_seconds())
+        writer.add_scalar("Test/acc", 2 * i / 100, epoch=1)
+        time.sleep(1)
+        print(i)
+
+    writer.write_result(loss=0.5, accuracy=0.97)
+    print(rtable.get_results())
