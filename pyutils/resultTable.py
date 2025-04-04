@@ -72,7 +72,8 @@ class LogWriter:
         self.log_count = {}
         self.enabled = True
     def add_scalar(self, tag: str, scalar_value: Union[float, int],
-                   step: Optional[int] = None, epoch: Optional[int] = None, walltime: Optional[float] = None):
+                   step: Optional[int] = None, epoch: Optional[int] = None,
+                   walltime: Optional[float] = None, run_rep: int = 0):
         """
         Add a scalar to the resultTable
         :param tag: The tag, formatted as: Split/name
@@ -80,6 +81,7 @@ class LogWriter:
         :param step: The global step. If none, the one calculated is used
         :param epoch: The epoch. If None, none is saved
         :param walltime: Override the wall time with this
+        :param run_rep: When the code is run multiple time, the run_rep can be used to log multiple repetitions of the same run_id
         :return: None
         """
         if not self.enabled:
@@ -105,7 +107,7 @@ class LogWriter:
         epoch = 0 if epoch is None else epoch
 
         # Added a row to table logs
-        self._log(tag, epoch, step, split, name, scalar_value, walltime)
+        self._log(tag, epoch, step, split, name, scalar_value, walltime, run_rep)
 
     def read_scalar(self, tag):
         splitted_tag = tag.split("/")
@@ -120,6 +122,14 @@ class LogWriter:
             rows = cursor.fetchall()
             return [Scalar(*row[1:]) for row in rows]
 
+    def write_result(self, **kwargs):
+        """
+        Log the results of the run to the table, then disable the logger.
+        :param kwargs: The metrics to save
+        :return: None
+        """
+        pass
+
     def _get_global_step(self, tag):
         """
         Keep track of the global step for each tag.
@@ -133,7 +143,8 @@ class LogWriter:
         self.global_step[tag] += 1
         return out
 
-    def _log(self, tag: str, epoch: int, step: int, split: str, name: str, scalar_value: float, walltime: float):
+    def _log(self, tag: str, epoch: int, step: int, split: str, name: str, scalar_value: float, walltime: float,
+             run_rep: int):
         """
         Store the scalar log into the buffer, and flush the buffer if it is full.
         :param tag: The tag
@@ -143,11 +154,12 @@ class LogWriter:
         :param name: The name
         :param scalar_value: The value
         :param walltime: The wall time
+        :param run_rep: The run repetition
         :return: None
         """
         if tag not in self.buffer:
             self.buffer[tag] = []
-        self.buffer[tag].append((self.run_id, epoch, step, split, name, scalar_value, walltime))
+        self.buffer[tag].append((self.run_id, epoch, step, split, name, scalar_value, walltime, run_rep))
 
         if len(self.buffer[tag]) >= self.flush_each:
             self._flush(tag)
@@ -159,8 +171,8 @@ class LogWriter:
         :return: None
         """
         query = """
-                INSERT INTO Logs (run_id, epoch, step, split, label, value, wall_time)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO Logs (run_id, epoch, step, split, label, value, wall_time, run_rep)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """
         with self._cursor as cursor:
             cursor.executemany(query, self.buffer[tag])
@@ -325,6 +337,7 @@ class ResultTable:
             label varchar(128) NOT NULL,
             value REAL NOT NULL,
             wall_time REAL NOT NULL,
+            run_rep INTEGER NOT NULL,
             FOREIGN KEY (run_id) REFERENCES Experiments(run_id)
         );
         """)
