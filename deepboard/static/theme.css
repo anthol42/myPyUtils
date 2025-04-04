@@ -1,0 +1,103 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background-color: #121212;
+  color: #e0e0e0;
+  overflow-y: hidden;
+}
+
+.container {
+  display: flex;
+}
+
+
+.image-area {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.image-area img {
+  max-width: 90%;
+  max-height: 90%;
+  border: 2px solid #333;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+.image-area p {
+  color: #aaa;
+  font-size: 1.1rem;
+}
+
+
+h1 {
+  margin-bottom: 1.5em;
+  color: #fff;
+}
+
+table {
+  width: 50%;
+  border-collapse: collapse;
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 1em;
+  text-align: left;
+}
+
+th {
+  background-color: #2a2a2a;
+  color: #ccc;
+  border-bottom: 1px solid #444;
+  position: relative;
+  padding-right: 25px;
+}
+/* Show sort icon on hover */
+th:hover .sort-icon {
+  display: inline;
+}
+
+th .sortable:hover {
+  color: #fff;
+}
+
+tr:nth-child(even) {
+  background-color: #1a1a1a;
+}
+
+tr:hover {
+  background-color: #2d2d2d;
+}
+
+td {
+  border-bottom: 1px solid #333;
+}
+
+.sortable {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.sort-icon {
+  display: none;
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: #888;
+}
+
+.table-container {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
