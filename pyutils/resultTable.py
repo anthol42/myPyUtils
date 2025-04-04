@@ -4,6 +4,8 @@ from typing import *
 from pathlib import PurePath
 from datetime import datetime, date
 import hashlib
+import shutil
+
 
 def adapt_date_iso(val):
     """Adapt datetime.date to ISO 8601 date."""
@@ -58,21 +60,45 @@ class ResultTable:
 
     def new_run(self, experiment_name: str,
                 config_path: Union[str, PurePath],
+                cli: dict,
+                out_path: Union[str, PurePath],
                 comment: Optional[str] = None):
-        # TODO: Move config file to out dir and verify if modification to avoid duplicates
         start = datetime.now()
         config_str = str(config_path)
         config_hash = self.get_file_hash(config_path)
         comment = "" if comment is None else comment
+        cli = " ".join([f'{key}={value}' for key, value in cli.values()])
         with self.cursor as cursor:
+            # Step 1: Check if the configuration already exists
+            cursor.execute("""
+                    SELECT * FROM Experiments
+                    WHERE experiment = ?
+                      AND config = ?
+                      AND config_hash = ?
+                      AND cli = ?
+                      AND comment = ?
+            """, (experiment_name, config_str, config_hash, cli, comment))
+            res = cursor.fetchone()
+            if res is not None:
+                run_id = res[0]
+                raise RuntimeError(f"Configuration has already been run with runID {run_id}. Consider changing "
+                                   f"parameter to avoid duplicate runs or add a comment.")
             # Insert the new row inside Experiments, then retrieve the runID
             cursor.execute("""
-                            INSERT INTO Experiments (experiment, config, config_hash, comment, start) 
-                            VALUES (?, ?, ?, ?, ?);
-                        """, (experiment_name, config_str, config_hash, comment, start))
+                            INSERT INTO Experiments (experiment, config, config_hash, cli, comment, start) 
+                            VALUES (?, ?, ?, ?, ?, ?);
+                        """, (experiment_name, config_str, config_hash, cli, comment, start))
 
             # Retrieve the run_id assigned by SQLite
             run_id = cursor.lastrowid
+
+        if not isinstance(out_path, PurePath):
+            out_path = PurePath(out_path)
+        if not isinstance(config_path, PurePath):
+            config_path = PurePath(config_path)
+        config_name = config_path.name
+
+        shutil.copy(config_path, out_path / f'run_{run_id}_{config_name}')
 
         return LogWriter(self.db_path, run_id)
 
@@ -109,9 +135,10 @@ class ResultTable:
             experiment varchar(128) NOT NULL,
             config varchar(128) NOT NULL,
             config_hash varchar(64),
+            cli varchar(256),
             comment TEXT,
             start DATETIME NOT NULL,
-            UNIQUE(experiment, config, config_hash, comment)
+            UNIQUE(experiment, config, config_hash, cli, comment)
         );
         """)
 
@@ -141,12 +168,15 @@ class ResultTable:
         );
         """)
 
+        # Create index for speed
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_config_hash ON Experiments(experiment, config, config_hash, cli, comment);")
         conn.commit()
         conn.close()
 
 
 if __name__ == "__main__":
     rtable = ResultTable()
-    writer = rtable.new_run("Experiment1", "results/myconfig.yml")
+    cli = {}
+    writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli, out_path="results/")
     print(writer.run_id)
     rtable.fetch_all_experiments()
