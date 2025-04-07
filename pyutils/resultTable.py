@@ -315,6 +315,54 @@ class ResultTable:
             for column, alias in columns.items():
                 cursor.execute("UPDATE ResultDisplay SET alias=? WHERE Name=?", (alias, column))
 
+    def hide_column(self, column: str):
+        """
+        Hide a column in the result table.
+        :param column: The column name to hide.
+        :return: None
+        """
+        with self.cursor as cursor:
+            cursor.execute("UPDATE ResultDisplay SET display_order=NULL WHERE Name=?", (column,))
+            # Change the order of every other columns such that they are continuous
+            cursor.execute("""
+            UPDATE ResultDisplay 
+                SET display_order=(
+                    SELECT COUNT(*) FROM ResultDisplay AS R2
+                    WHERE R2.display_order < ResultDisplay.display_order
+                    ) + 1
+                WHERE display_order IS NOT NULL;""", )
+
+    def show_column(self, column: str, order: int = -1):
+        """
+        Show a column in the result table.
+        If order is -1, it will be set to the last column.
+        """
+        # If the column is already at this order, do nothing
+        current = {col_id: order for col_id, (order, alias) in self.result_columns.items()}[column]
+        if current == order:
+            return
+        with self.cursor as cursor:
+            # Get the max order
+            cursor.execute("SELECT MAX(display_order) FROM ResultDisplay")
+            max_order = cursor.fetchone()[0]
+            if max_order is None:
+                max_order = 0
+            else:
+                max_order += 1
+
+            if order == -1:
+                order = max_order
+
+            # Update all display orders
+            cursor.execute("""
+                UPDATE ResultDisplay
+                SET display_order = display_order + 1
+                WHERE display_order >= ?
+            """, (order,))
+            # print(self.result_columns)
+            # Insert the column
+            cursor.execute("UPDATE ResultDisplay SET display_order=? WHERE Name=?", (order, column))
+
     def get_results(self, run_id: Optional[int] = None) -> Tuple[List[str], List[List[Any]]]:
         """
         Get the result table as a dict
@@ -351,10 +399,7 @@ class ResultTable:
             exp_info[run_id].update(metrics)
 
         # Sort the columns of the result table
-        columns = self.result_columns
-        for elem in columns.items():
-            print(elem)
-        columns = [(col_id, col_order, col_alias) for col_id, (col_order, col_alias) in columns.items() if
+        columns = [(col_id, col_order, col_alias) for col_id, (col_order, col_alias) in self.result_columns.items() if
                    col_order is not None]
         columns.sort(key=lambda x: x[1])
 
@@ -436,8 +481,7 @@ class ResultTable:
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS ResultDisplay (
             Name varchar(128) NOT NULL, display_order INTEGER, alias varchar(128) NOT NULL,
-            PRIMARY KEY (Name),
-            UNIQUE (display_order)
+            PRIMARY KEY (Name)
         );
         """)  # We can put order to unique, because each NULL value will be unique
 
@@ -476,21 +520,21 @@ if __name__ == "__main__":
     rtable = ResultTable()
     cli = {}
     start = datetime.now()
-    # writer = rtable.new_run("Experiment3", "results/myconfig.yml", cli=cli)
+    writer = rtable.new_run("Experiment3", "results/myconfig.yml", cli=cli)
     # writer = rtable.load_run(1)
     # print(writer.run_id)
     # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
     # train_step = [s.value for s in writer.read_scalar("Train/acc")]
     # print(train_step)
     # print(val_step)
-    # for i in range(100):
-    #     writer.add_scalar("Train/acc", 1.9 * i / 100, i)
-    #     writer.add_scalar("Valid/acc", 1.75 * i / 100, walltime=(datetime.now() - start).total_seconds())
-    #     writer.add_scalar("Test/acc", 1.76 * i / 100, epoch=1)
-    #     time.sleep(0.01)
-    #     print(i)
-    #
-    # writer.write_result(loss=0.25, accuracy=0.99)
+    for i in range(100):
+        writer.add_scalar("Train/acc", 1.9 * i / 100, i)
+        writer.add_scalar("Valid/acc", 1.75 * i / 100, walltime=(datetime.now() - start).total_seconds())
+        writer.add_scalar("Test/acc", 1.76 * i / 100, epoch=1)
+        time.sleep(0.01)
+        print(i)
+
+    writer.write_result(loss=0.25, accuracy=0.99)
     columns, data = rtable.get_results()
     print(columns)
     for row in data:
