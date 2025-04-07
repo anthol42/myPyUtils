@@ -291,26 +291,82 @@ class ResultTable:
             rows = cursor.fetchall()
             for row in rows:
                 print(row)
-    def get_results(self, run_id: Optional[int] = None) -> Dict[int, Dict[str, float]]:
+
+    def set_column_order(self, columns: Dict[str, Optional[int]]):
+        """
+        Set the order of the column in the result table. If order is None, it will be set to NULL
+        :param columns: A dict of column name and their order. The order is the index of the column in the table.
+        If the order is None, it will be set to NULL and be hidden
+        :return: None
+        """
+        with self.cursor as cursor:
+            # Batch update
+            for column, order in columns.items():
+                cursor.execute("UPDATE ResultDisplay SET order=? WHERE Name=?", (order, column))
+
+    def set_column_alias(self, columns: Dict[str, str]):
+        """
+        Set the alias of the column in the result table.
+        :param columns: A dict of column name and their alias. The alias is the name displayed in the table.
+        :return: None
+        """
+        with self.cursor as cursor:
+            # Batch update
+            for column, alias in columns.items():
+                cursor.execute("UPDATE ResultDisplay SET alias=? WHERE Name=?", (alias, column))
+
+    def get_results(self, run_id: Optional[int] = None) -> Tuple[List[str], List[List[Any]]]:
         """
         Get the result table as a dict
         :param run_id: the run id. If none is specified, it fetches all results
         :return: A dict of dick, where the first set of keys is the runID and the second one is the metric names
         """
         out = {}
+        exp_info = {}
         with self.cursor as cursor:
             if run_id is None:
-                cursor.execute("SELECT * FROM Results")
+                cursor.execute("SELECT R.run_id, E.experiment, E.config, E.cli, E.comment, E.start, R.metric, R.value "
+                               "FROM Results R, Experiments E WHERE R.run_id=E.run_id")
             else:
-                cursor.execute("SELECT * FROM Results WHERE run_id=?", (run_id, ))
+                cursor.execute("SELECT R.run_id, E.experiment, E.config, E.cli, E.comment, E.start, R.metric, R.value "
+                               "FROM Results R, Experiments E WHERE R.run_id=E.run_id R.run_id=?", (run_id, ))
             rows = cursor.fetchall()
 
         for row in rows:
-            run_id, metric, value = row[1], row[2], row[3]
+            run_id, metric, value = row[0], row[6], row[7]
             if run_id not in out:  # Run id already stored
                 out[run_id] = {}
+                exp_info[run_id] = dict(
+                    run_id=run_id,
+                    experiment=row[1],
+                    config=row[2],
+                    cli=row[3],
+                    comment=row[4],
+                    start=datetime.fromisoformat(row[5])
+                )
             out[run_id][metric] = value
-        return out
+
+        # Merge them together:
+        for run_id, metrics in out.items():
+            exp_info[run_id].update(metrics)
+
+        # Sort the columns of the result table
+        columns = self.result_columns
+        for elem in columns.items():
+            print(elem)
+        columns = [(col_id, col_order, col_alias) for col_id, (col_order, col_alias) in columns.items() if
+                   col_order is not None]
+        columns.sort(key=lambda x: x[1])
+
+        table = [[row[col[0]] for col in columns] for key, row in exp_info.items()]
+        return [col[2] for col in columns], table
+
+    @property
+    def result_columns(self) -> Dict[str, Tuple[Optional[int], str]]:
+        with self.cursor as cursor:
+            cursor.execute("SELECT Name, display_order, alias FROM ResultDisplay")
+            rows = cursor.fetchall()
+            return {row[0]: (row[1], row[2]) for row in rows}
 
     @property
     def cursor(self):
@@ -374,6 +430,42 @@ class ResultTable:
         );
         """)
 
+        # Display Table
+        # This table stores every column of Results, their order and whether they displayed or not
+        # If order is Null, it means that the column is not displayed
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ResultDisplay (
+            Name varchar(128) NOT NULL, display_order INTEGER, alias varchar(128) NOT NULL,
+            PRIMARY KEY (Name),
+            UNIQUE (display_order)
+        );
+        """)  # We can put order to unique, because each NULL value will be unique
+
+        # Add default columns
+        cursor.execute("""
+        INSERT OR IGNORE INTO ResultDisplay (Name, display_order, alias) VALUES
+        ('run_id', 0, 'Run ID'),
+        ('experiment', 1, 'Experiment'),
+        ('config', 2, 'Config'),
+        ('config_hash', NULL, 'Config Hash'),
+        ('cli', 3, 'Cli'),
+        ('comment', 4, 'Comment'),
+        ('start', 5, 'Start');
+        """)
+
+        # Create a trigger to add a new metric to the display table
+        cursor.execute("""
+        CREATE TRIGGER IF NOT EXISTS after_result_insert
+        AFTER INSERT ON Results
+        BEGIN
+            -- Insert a row into ResultDisplay if the Name does not exist
+            INSERT OR IGNORE INTO ResultDisplay (Name, display_order, alias)
+            SELECT NEW.metric, 
+                   COALESCE(MAX(display_order), 0) + 1, 
+                   NEW.metric
+            FROM ResultDisplay;
+        END;
+        """)
         # Create index for speed
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_config_hash ON Experiments(experiment, config, config_hash, cli, comment);")
         conn.commit()
@@ -384,19 +476,22 @@ if __name__ == "__main__":
     rtable = ResultTable()
     cli = {}
     start = datetime.now()
-    writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli)
+    # writer = rtable.new_run("Experiment3", "results/myconfig.yml", cli=cli)
     # writer = rtable.load_run(1)
     # print(writer.run_id)
     # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
     # train_step = [s.value for s in writer.read_scalar("Train/acc")]
     # print(train_step)
     # print(val_step)
-    for i in range(100):
-        writer.add_scalar("Train/acc", 2 * i / 100, i)
-        writer.add_scalar("Valid/acc", 2 * i / 100, walltime=(datetime.now() - start).total_seconds())
-        writer.add_scalar("Test/acc", 2 * i / 100, epoch=1)
-        time.sleep(1)
-        print(i)
-
-    writer.write_result(loss=0.5, accuracy=0.97)
-    print(rtable.get_results())
+    # for i in range(100):
+    #     writer.add_scalar("Train/acc", 1.9 * i / 100, i)
+    #     writer.add_scalar("Valid/acc", 1.75 * i / 100, walltime=(datetime.now() - start).total_seconds())
+    #     writer.add_scalar("Test/acc", 1.76 * i / 100, epoch=1)
+    #     time.sleep(0.01)
+    #     print(i)
+    #
+    # writer.write_result(loss=0.25, accuracy=0.99)
+    columns, data = rtable.get_results()
+    print(columns)
+    for row in data:
+        print(row)
