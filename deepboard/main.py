@@ -1,32 +1,31 @@
+import sys; sys.path.append('..')
 from fasthtml.common import *
+from datagrid import DataGrid
+from utils import prepare_db
+from pyutils.resultTable import ResultTable
+
 DATABASE = "../pyutils/results/result_table.db"
 
-db = database(DATABASE)
+prepare_db()
 
-experiments, results, logs = db.t.Experiments, db.t.Results, db.t.Logs
-
-if experiments not in db.t:
-    raise RuntimeError("Expect a valid database: Experiment table not found")
-if results not in db.t:
-    raise RuntimeError("Expect a valid database: Results table not found")
-if logs not in db.t:
-    raise RuntimeError("Expect a valid database: Logs table not found")
+rTable = ResultTable(DATABASE)
 
 def _not_found(req, exc): return Titled('Oh no!', Div('We could not find that page :('))
 
 app = FastHTMLWithLiveReload(
     exception_handlers={404: _not_found},
     hdrs=(
-        Link(rel='stylesheet', href='static/theme.css', type='text/css'),
-        Script(src="static/base.js")
+        Link(rel='stylesheet', href='assets/theme.css', type='text/css'),
+        Script(src="assets/base.js")
     ),
-    static_path='static'
+    static_path='assets'
 )
 
 rt = app.route
-@rt("/static/{fname:path}.{ext:static}")
+@rt("/assets/{fname:path}.{ext:static}")
 async def get(fname:str, ext:str):
-    return FileResponse(f'static/{fname}.{ext}')
+    print(f"\n\nServing static file: {fname}.{ext}")
+    return FileResponse(f'assets/{fname}.{ext}')
 
 
 def ExperimentRow(name: str):
@@ -34,67 +33,19 @@ def ExperimentRow(name: str):
         H3(name),
         cls="exp_row"
     )
+
+
+
+
+# DataGrid
+
+
 @rt("/")
 def get():
     return (Title("Main page"),
+            Div(id="custom-menu"),
             Div(
-                Div(
-                    Table(
-                        Thead(
-                            Tr(
-                                Th(
-                                    Span('RunId', hx_get='/sort?by=RunId', hx_target='tbody', hx_swap='outerHTML',
-                                         cls='sortable'),
-                                    Span('⇅', cls='sort-icon')
-                                ),
-                                Th(
-                                    Span('Experiment', hx_get='/sort?by=Experiment', hx_target='tbody',
-                                         hx_swap='outerHTML', cls='sortable'),
-                                    Span('⇅', cls='sort-icon')
-                                ),
-                                Th(
-                                    Span('RunTime', hx_get='/sort?by=RunTime', hx_target='tbody', hx_swap='outerHTML',
-                                         cls='sortable'),
-                                    Span('⇅', cls='sort-icon')
-                                ),
-                                Th(
-                                    Span('Loss', hx_get='/sort?by=Loss', hx_target='tbody', hx_swap='outerHTML',
-                                         cls='sortable'),
-                                    Span('⇅', cls='sort-icon')
-                                ),
-                                Th(
-                                    Span('Accuracy', hx_get='/sort?by=Accuracy', hx_target='tbody', hx_swap='outerHTML',
-                                         cls='sortable'),
-                                    Span('⇅', cls='sort-icon')
-                                )
-                            )
-                        ),
-                        Tbody(
-                            Tr(
-                                Td('001'),
-                                Td('baseline'),
-                                Td('12m 35s'),
-                                Td('0.342'),
-                                Td('88.5%')
-                            ),
-                            Tr(
-                                Td('002'),
-                                Td('dropout_0.3'),
-                                Td('13m 10s'),
-                                Td('0.289'),
-                                Td('90.1%')
-                            ),
-                            Tr(
-                                Td('003'),
-                                Td('batchnorm_on'),
-                                Td('12m 47s'),
-                                Td('0.301'),
-                                Td('89.3%')
-                            )
-                        )
-                    ),
-                    cls="table-container"
-                ),
+                DataGrid(rTable),
                 Div(
                     P('Select an item to see the image.'),
                     id='image-area',
@@ -103,5 +54,31 @@ def get():
                 cls='container'
             )
             )
+
+
+
+# Dropdown menu when right-cliked
+@rt("/get-context-menu")
+def get(elementId: str, top: int, left: int):
+    if elementId.startswith("grid-header"):
+        return Div(
+            Div(
+                Div('Hide', hx_post='/copy', hx_target='this', cls="menu-item"),
+                Div('Add', hx_post='/copy', hx_target='this', cls="menu-item"),
+                cls='dropdown-menu'
+            ),
+            id='custom-menu',
+            style=f'visibility: visible; top: {top}px; left: {left}px;',
+        )
+    else:
+        return Div(
+            Div(
+                Div('Option 1', hx_post='/copy', hx_target='this', cls="menu-item"),
+                Div('Option 2', hx_post='/copy', hx_target='this', cls="menu-item"),
+                cls='dropdown-menu'
+            ),
+            id='custom-menu',
+            style=f'visibility: visible; top: {top}px; left: {left}px;',
+        )
 
 serve()
