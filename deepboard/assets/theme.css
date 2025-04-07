@@ -103,7 +103,7 @@ td {
   background-color: #333;
   border: 1px solid #555;
   border-radius: 6px;
-  padding: 0.5rem 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   z-index: 1000;
@@ -111,11 +111,54 @@ td {
   visibility: hidden;
 }
 
-.menu-item {
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
+.dropdown-menu {
+    background-color: #222;
+    color: #eee;
+    padding: 0;
+    width: 200px;
+    font-family: sans-serif;
+    margin: 0;
+    list-style: none;
+  }
 
-.menu-item:hover {
-  background-color: #444;
+  .menu-item {
+    padding: 0.5rem;
+    cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .menu-item:hover {
+    background-color: #333;
+  }
+
+  .has-submenu-wrapper {
+    position: relative;
+  }
+.has-submenu {
+    text-decoration: none;
+    color: inherit;
+    display: block;
 }
+  .submenu {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-left: 0.25rem;
+    background-color: #333;
+    border-radius: 6px;
+    padding: 0;
+    list-style: none;
+    min-width: 150px;
+    z-index: 1001;
+    margin-left: 0;
+  }
+
+  .has-submenu-wrapper:hover .submenu {
+    display: block;
+  }
+
+  .submenu .menu-item:hover {
+    background-color: #444;
+  }

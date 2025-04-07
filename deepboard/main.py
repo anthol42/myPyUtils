@@ -61,10 +61,19 @@ def get():
 @rt("/get-context-menu")
 def get(elementId: str, top: int, left: int):
     if elementId.startswith("grid-header"):
+        hidden_columns = [(key, alias) for key, (order, alias) in rTable.result_columns.items() if order is None]
         return Div(
-            Div(
-                Div('Hide', hx_post='/copy', hx_target='this', cls="menu-item"),
-                Div('Add', hx_post='/copy', hx_target='this', cls="menu-item"),
+            Ul(
+                Li('Hide', hx_post='/copy', hx_target='this', cls="menu-item"),
+                Li(
+                    Div(A('Add', href="#", cls="has-submenu"), Span("►"), style="display: flex; flex-direction: row; justify-content: space-between;"),
+                    Ul(
+                        *[Li(alias, cls="menu-item")
+                         for col_name, alias in hidden_columns],
+                        cls="submenu"
+                    ),
+                    cls="menu-item has-submenu-wrapper"
+                ),
                 cls='dropdown-menu'
             ),
             id='custom-menu',
