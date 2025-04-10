@@ -363,34 +363,35 @@ class ResultTable:
             # Insert the column
             cursor.execute("UPDATE ResultDisplay SET display_order=? WHERE Name=?", (order, column))
 
-    def get_results(self, run_id: Optional[int] = None) -> Tuple[List[str], List[List[Any]]]:
+    def get_results(self, run_id: Optional[int] = None) -> Tuple[List[str], List[str], List[List[Any]]]:
         """
         Get the result table as a dict
         :param run_id: the run id. If none is specified, it fetches all results
-        :return: A dict of dick, where the first set of keys is the runID and the second one is the metric names
+        :return: A list of columns names, a list of column ids and a list of rows
         """
         out = {}
         exp_info = {}
         with self.cursor as cursor:
             if run_id is None:
-                cursor.execute("SELECT R.run_id, E.experiment, E.config, E.cli, E.comment, E.start, R.metric, R.value "
+                cursor.execute("SELECT R.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, R.metric, R.value "
                                "FROM Results R, Experiments E WHERE R.run_id=E.run_id")
             else:
-                cursor.execute("SELECT R.run_id, E.experiment, E.config, E.cli, E.comment, E.start, R.metric, R.value "
+                cursor.execute("SELECT R.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, R.metric, R.value "
                                "FROM Results R, Experiments E WHERE R.run_id=E.run_id R.run_id=?", (run_id, ))
             rows = cursor.fetchall()
 
         for row in rows:
-            run_id, metric, value = row[0], row[6], row[7]
+            run_id, metric, value = row[0], row[7], row[8]
             if run_id not in out:  # Run id already stored
                 out[run_id] = {}
                 exp_info[run_id] = dict(
                     run_id=run_id,
                     experiment=row[1],
                     config=row[2],
-                    cli=row[3],
-                    comment=row[4],
-                    start=datetime.fromisoformat(row[5])
+                    config_hash=row[3],
+                    cli=row[4],
+                    comment=row[5],
+                    start=datetime.fromisoformat(row[6])
                 )
             out[run_id][metric] = value
 
@@ -404,7 +405,7 @@ class ResultTable:
         columns.sort(key=lambda x: x[1])
 
         table = [[row[col[0]] for col in columns] for key, row in exp_info.items()]
-        return [col[2] for col in columns], table
+        return [col[2] for col in columns], [col[0] for col in columns], table
 
     @property
     def result_columns(self) -> Dict[str, Tuple[Optional[int], str]]:
