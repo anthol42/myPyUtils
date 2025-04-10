@@ -74,6 +74,17 @@ td {
   cursor: pointer;
 }
 
+.rename-input {
+  color: #ccc;
+  font-family: system-ui, sans-serif;
+  padding: 0.5rem;
+  font-size: 1rem;
+  background-color: #4d4d4d;
+  border: none;              /* No border */
+  border-radius: 0.5rem;     /* Smooth rounded corners */
+  outline: none;             /* Removes the default focus outline */
+}
+
 .sortable:hover {
   background-color: #4d4d4d;
 }

@@ -1,6 +1,7 @@
 import sys; sys.path.append('..')
 from fasthtml.common import *
-from datagrid import DataGrid
+from datagrid import DataGrid, build_datagrid_endpoints
+from datagrid import right_click_handler as right_click_handler_dg
 from utils import prepare_db
 from pyutils.resultTable import ResultTable
 
@@ -45,7 +46,7 @@ def get():
     return (Title("Main page"),
             Div(id="custom-menu"),
             Div(
-                DataGrid(rTable),
+                DataGrid(),
                 Div(
                     P('Select an item to see the image.'),
                     id='image-area',
@@ -61,24 +62,7 @@ def get():
 @rt("/get-context-menu")
 def get(elementId: str, top: int, left: int):
     if elementId.startswith("grid-header"):
-        hidden_columns = [(key, alias) for key, (order, alias) in rTable.result_columns.items() if order is None]
-        return Div(
-            Ul(
-                Li('Hide', hx_post='/copy', hx_target='this', cls="menu-item"),
-                Li(
-                    Div(A('Add', href="#", cls="has-submenu"), Span("►"), style="display: flex; flex-direction: row; justify-content: space-between;"),
-                    Ul(
-                        *[Li(alias, cls="menu-item")
-                         for col_name, alias in hidden_columns],
-                        cls="submenu"
-                    ),
-                    cls="menu-item has-submenu-wrapper"
-                ),
-                cls='dropdown-menu'
-            ),
-            id='custom-menu',
-            style=f'visibility: visible; top: {top}px; left: {left}px;',
-        )
+        return right_click_handler_dg(elementId, top, left)
     else:
         return Div(
             Div(
@@ -89,5 +73,7 @@ def get(elementId: str, top: int, left: int):
             id='custom-menu',
             style=f'visibility: visible; top: {top}px; left: {left}px;',
         )
+
+build_datagrid_endpoints(rt)
 
 serve()
