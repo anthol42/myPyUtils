@@ -45,16 +45,23 @@ def format_value(value):
     if isinstance(value, datetime):
         return value.strftime('%Y-%m-%d %H:%M:%S')
     return value
-def Row(data):
+
+def Row(data, run_id, selected: bool):
     return Tr(
-        *[Td(format_value(value)) for value in data]
+        *[Td(format_value(value)) for value in data],
+        hx_get=f"/click_row?run_id={run_id}",  # HTMX will GET this URL
+        hx_target="#experiment-table",  # Target DOM element to update
+        hx_swap="outerHTML",  # Optional: how to replace content
+        cls="table-row" if not selected else "table-row-selected",
     )
 
-def DataGrid(rename_col: str = None, sort_by: str = None, sort_order: str = None):
+def DataGrid(rename_col: str = None, sort_by: str = None, sort_order: str = None, row_selected: int = None):
     from __main__ import rTable
     columns, col_ids, data = rTable.get_results()
     if sort_by is not None and sort_order is not None:
         data = sorted(data, key=lambda x: x[col_ids.index(sort_by)], reverse=(sort_order == "desc"))
+
+    run_ids = [row[col_ids.index("run_id")] for row in data]
     return Div(
         Table(
             # We put the headers in a form so that we can sort them using htmx
@@ -70,7 +77,7 @@ def DataGrid(rename_col: str = None, sort_by: str = None, sort_order: str = None
                 )
                 ),
             Tbody(
-                *[Row(row) for row in data]
+                *[Row(row, run_id, selected=run_id == row_selected) for row, run_id in zip(data, run_ids)],
             ),
             id="experiment-table",
         ),
@@ -159,7 +166,6 @@ def right_click_handler(elementId: str, top: int, left: int):
 
 
 async def hide_column(col: str):
-    print(f"Hide column: {col}")
     from __main__ import rTable
     rTable.hide_column(col)
 

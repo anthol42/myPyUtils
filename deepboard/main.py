@@ -29,16 +29,6 @@ async def get(fname:str, ext:str):
     print(f"\n\nServing static file: {fname}.{ext}")
     return FileResponse(f'assets/{fname}.{ext}')
 
-
-def ExperimentRow(name: str):
-    return Div(
-        H3(name),
-        cls="exp_row"
-    )
-
-
-
-
 # DataGrid
 
 
@@ -49,14 +39,28 @@ def get():
             Div(
                 DataGrid(),
                 Div(
-                    P('Select an item to see the image.'),
+                    Div(
+                    P('Select an item to see the image.', cls="right-panel-placeholder"),
                     id='image-area',
-                    cls='image-area'
+                    ),
+                    id='right-panel',
                 ),
                 cls='container'
             )
             )
 
+
+# Choose a row in the datagrid
+@rt("/click_row")
+def get(run_id: int):
+    # Return the image
+    return DataGrid(row_selected=run_id), Div(
+                    Div(
+                    P(f'Row {run_id} selected', cls="right-panel-placeholder")
+                    ),
+                    id='right-panel',
+                    hx_swap_oob='outerHTML'
+                ),
 
 
 # Dropdown menu when right-cliked

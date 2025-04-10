@@ -11,22 +11,14 @@ body {
 }
 
 
-.image-area {
+#right-panel {
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.image-area img {
-  max-width: 90%;
-  max-height: 90%;
-  border: 2px solid #333;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
-}
-
-.image-area p {
+.right-panel-placeholder {
   color: #aaa;
   font-size: 1.1rem;
 }
@@ -106,6 +98,18 @@ td {
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.table-row{
+    cursor: pointer;
+}
+
+.table-row:hover{
+    background-color: #2a2a2a;
+}
+
+.table-row-selected {
+    background-color: #2a2a2a !important;
 }
 
 /*Menu when you right click*/
