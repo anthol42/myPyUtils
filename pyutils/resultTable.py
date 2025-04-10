@@ -302,7 +302,7 @@ class ResultTable:
         with self.cursor as cursor:
             # Batch update
             for column, order in columns.items():
-                cursor.execute("UPDATE ResultDisplay SET order=? WHERE Name=?", (order, column))
+                cursor.execute("UPDATE ResultDisplay SET display_order=? WHERE Name=?", (order, column))
 
     def set_column_alias(self, columns: Dict[str, str]):
         """
@@ -521,7 +521,7 @@ if __name__ == "__main__":
     rtable = ResultTable()
     cli = {}
     start = datetime.now()
-    writer = rtable.new_run("Experiment3", "results/myconfig.yml", cli=cli)
+    writer = rtable.new_run("Experiment2", "results/myconfig.yml", cli=cli)
     # writer = rtable.load_run(1)
     # print(writer.run_id)
     # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
@@ -535,8 +535,8 @@ if __name__ == "__main__":
         time.sleep(0.01)
         print(i)
 
-    writer.write_result(loss=0.25, accuracy=0.99)
-    columns, data = rtable.get_results()
+    writer.write_result(loss=0.33, accuracy=0.985)
+    columns, col_ids, data = rtable.get_results()
     print(columns)
     for row in data:
         print(row)

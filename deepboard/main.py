@@ -1,6 +1,6 @@
 import sys; sys.path.append('..')
 from fasthtml.common import *
-from datagrid import DataGrid, build_datagrid_endpoints
+from datagrid import DataGrid, build_datagrid_endpoints, SortableColumnsJs
 from datagrid import right_click_handler as right_click_handler_dg
 from utils import prepare_db
 from pyutils.resultTable import ResultTable
@@ -17,7 +17,8 @@ app = FastHTMLWithLiveReload(
     exception_handlers={404: _not_found},
     hdrs=(
         Link(rel='stylesheet', href='assets/theme.css', type='text/css'),
-        Script(src="assets/base.js")
+        Script(src="assets/base.js"),
+        SortableColumnsJs(),
     ),
     static_path='assets'
 )
