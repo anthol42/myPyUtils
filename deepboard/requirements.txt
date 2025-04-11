@@ -1,3 +1,4 @@
 python-fasthtml
 fh-plotly
 plotly
+pandas

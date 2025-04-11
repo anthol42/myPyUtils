@@ -47,7 +47,7 @@ class Cursor:
             self._conn.close()
 
 class Scalar:
-    def __init__(self, run_id, epoch, step, split, label, value, wall_time):
+    def __init__(self, run_id, epoch, step, split, label, value, wall_time, run_rep):
         self.run_id = run_id
         self.epoch = epoch
         self.step = step
@@ -55,6 +55,11 @@ class Scalar:
         self.label = label
         self.value = value
         self.wall_time = wall_time
+        self.run_rep = run_rep
+
+    def __str__(self):
+        return (f"Scalar(run_id={self.run_id}, epoch={self.epoch}, step={self.step}, split={self.split}, "
+                f"label={self.label}, value={self.value}, wall_time={self.wall_time}, run_rep={self.run_rep})")
 
 class LogWriter:
     def __init__(self, db_path, run_id: int, start: datetime, flush_each: int = 10, keep_each: int = 1):
@@ -109,6 +114,12 @@ class LogWriter:
         # Added a row to table logs
         self._log(tag, epoch, step, split, name, scalar_value, walltime, run_rep)
 
+    def __getitem__(self, tag):
+        """
+        Get the scalar values for a given tag.
+        """
+        return self.read_scalar(tag)
+
     def read_scalar(self, tag):
         splitted_tag = tag.split("/")
         if len(splitted_tag) == 2:
@@ -141,6 +152,28 @@ class LogWriter:
 
         # Disable the logger
         self.enabled = False
+
+    @property
+    def scalars(self) -> List[str]:
+        """
+        Return the tags of all scalars logged in the run
+        """
+        # We need to format the tags as Split/Label
+        # If split is empty, we just return the label
+        rows = [(row[0] + "/" + row[1]) if row[0] != "" else row[1] for row in self.formatted_scalars]
+        return rows
+
+    @property
+    def formatted_scalars(self) -> List[Tuple[str, str]]:
+        """
+        Return the scalars values as split and label
+        """
+        with self._cursor as cursor:
+            cursor.execute("SELECT DISTINCT split, label FROM Logs WHERE run_id=?", (self.run_id,))
+            rows = cursor.fetchall()
+            # We need to format the tags as Split/Label
+            # If split is empty, we just return the label
+            return [(row[0], row[1]) for row in rows]
 
     def _get_global_step(self, tag):
         """
