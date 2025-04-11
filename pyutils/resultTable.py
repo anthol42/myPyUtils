@@ -377,7 +377,7 @@ class ResultTable:
                                "FROM Results R, Experiments E WHERE R.run_id=E.run_id")
             else:
                 cursor.execute("SELECT R.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, R.metric, R.value "
-                               "FROM Results R, Experiments E WHERE R.run_id=E.run_id R.run_id=?", (run_id, ))
+                               "FROM Results R, Experiments E WHERE R.run_id=E.run_id AND R.run_id=?", (run_id, ))
             rows = cursor.fetchall()
 
         for row in rows:
