@@ -1,0 +1,85 @@
+
+#right-panel {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.right-panel-placeholder {
+  color: #aaa;
+  font-size: 1.1rem;
+}
+
+.close-button {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.close-button:hover {
+  color: #d0d0d0;
+}
+
+.open-right-panel{
+    display: flex;
+    height: 100%;
+    width: 100%;
+    justify-content: left;
+    padding-left: 4rem;
+    padding-top: 2rem;
+}
+
+h1 {
+padding: 0;
+margin: 0;
+}
+
+/* styles.css */
+
+.tab-menu {
+  display: flex;
+  margin-bottom: 0;
+  margin-top: 1rem;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  background-color: #1a1a1a; /* Slightly darker than unselected tab */
+  color: #ccc;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  margin-right: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.tab:hover {
+  background-color: #4d4d4d;
+}
+
+.tab.active {
+  background-color: #2a2a2a;
+}
+
+.tab-content {
+  background-color: #2a2a2a;
+  padding: 2rem;
+  border-top: none;
+  border-radius: 0 10px 10px 10px;
+  color: #ccc;
+  width: 100%;
+  height: 100%;
+}
+
+.right-panel-content{
+width: 90%;
+height: 80vh;
+}

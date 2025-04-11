@@ -4,6 +4,7 @@ from datagrid import DataGrid, build_datagrid_endpoints, SortableColumnsJs
 from datagrid import right_click_handler as right_click_handler_dg
 from utils import prepare_db
 from pyutils.resultTable import ResultTable
+from right_panel import RightPanel, build_right_panel_routes
 
 DATABASE = "../pyutils/results/result_table.db"
 
@@ -17,6 +18,8 @@ app = FastHTMLWithLiveReload(
     exception_handlers={404: _not_found},
     hdrs=(
         Link(rel='stylesheet', href='assets/theme.css', type='text/css'),
+        Link(rel='stylesheet', href='assets/right_panel.css', type='text/css'),
+        Link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css", rel="stylesheet"),
         Script(src="assets/base.js"),
         SortableColumnsJs(),
     ),
@@ -38,29 +41,27 @@ def get():
             Div(id="custom-menu"),
             Div(
                 DataGrid(),
-                Div(
-                    Div(
-                    P('Select an item to see the image.', cls="right-panel-placeholder"),
-                    id='image-area',
-                    ),
-                    id='right-panel',
-                ),
-                cls='container'
+                RightPanel(),
+                cls='container',
+                id="container",
             )
             )
 
+@rt("/reset")
+def get():
+    return Div(
+                DataGrid(),
+                RightPanel(),
+                cls='container',
+                id = "container",
+                hx_swap_oob='outerHTML'
+            )
 
 # Choose a row in the datagrid
 @rt("/click_row")
 def get(run_id: int):
     # Return the image
-    return DataGrid(row_selected=run_id), Div(
-                    Div(
-                    P(f'Row {run_id} selected', cls="right-panel-placeholder")
-                    ),
-                    id='right-panel',
-                    hx_swap_oob='outerHTML'
-                ),
+    return DataGrid(row_selected=run_id), RightPanel(run_id)
 
 
 # Dropdown menu when right-cliked
@@ -80,5 +81,6 @@ def get(elementId: str, top: int, left: int):
         )
 
 build_datagrid_endpoints(rt)
+build_right_panel_routes(rt)
 
 serve()

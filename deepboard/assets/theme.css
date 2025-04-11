@@ -11,18 +11,6 @@ body {
 }
 
 
-#right-panel {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.right-panel-placeholder {
-  color: #aaa;
-  font-size: 1.1rem;
-}
-
 
 h1 {
   margin-bottom: 1.5em;
