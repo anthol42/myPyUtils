@@ -76,9 +76,27 @@ class LogWriter:
         self.buffer = {}
         self.log_count = {}
         self.enabled = True
+        self.run_rep = 0
+
+    def new_repetition(self):
+        """
+        Create a new repetition of the current run. This is useful if you want to log multiple repetitions of the same run.
+        :return: None
+        """
+        # Start by flushing the buffer
+        for tag in self.buffer.keys():
+            self._flush(tag)
+
+        self.run_rep += 1
+
+        # Reset the writer
+        self.log_count = {}
+        self.global_step = {}
+        self.start = datetime.now()
+
     def add_scalar(self, tag: str, scalar_value: Union[float, int],
                    step: Optional[int] = None, epoch: Optional[int] = None,
-                   walltime: Optional[float] = None, run_rep: int = 0):
+                   walltime: Optional[float] = None):
         """
         Add a scalar to the resultTable
         :param tag: The tag, formatted as: Split/name
@@ -112,7 +130,7 @@ class LogWriter:
         epoch = 0 if epoch is None else epoch
 
         # Added a row to table logs
-        self._log(tag, epoch, step, split, name, scalar_value, walltime, run_rep)
+        self._log(tag, epoch, step, split, name, scalar_value, walltime, self.run_rep)
 
     def __getitem__(self, tag):
         """
@@ -551,22 +569,26 @@ class ResultTable:
 
 
 if __name__ == "__main__":
+    import numpy as np
     rtable = ResultTable()
     cli = {}
     start = datetime.now()
-    writer = rtable.new_run("Experiment2", "results/myconfig.yml", cli=cli)
+    writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli, comment="Dev 0.1")
     # writer = rtable.load_run(1)
     # print(writer.run_id)
     # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
     # train_step = [s.value for s in writer.read_scalar("Train/acc")]
     # print(train_step)
     # print(val_step)
-    for i in range(100):
-        writer.add_scalar("Train/acc", 1.9 * i / 100, i)
-        writer.add_scalar("Valid/acc", 1.75 * i / 100, walltime=(datetime.now() - start).total_seconds())
-        writer.add_scalar("Test/acc", 1.76 * i / 100, epoch=1)
-        time.sleep(0.01)
-        print(i)
+    for rep in range(3):
+        if rep > 0:
+            writer.new_repetition()
+        for e in range(10):
+            for i in range(100):
+                writer.add_scalar("Train/acc", np.sqrt(i / 10) / 3.2, epoch=e)
+                writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 3.5, epoch=e)
+                time.sleep(0.01)
+                print(rep, e, i)
 
     writer.write_result(loss=0.33, accuracy=0.985)
     columns, col_ids, data = rtable.get_results()
