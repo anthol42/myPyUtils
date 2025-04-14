@@ -151,6 +151,16 @@ class LogWriter:
             rows = cursor.fetchall()
             return [Scalar(*row[1:]) for row in rows]
 
+    def get_repetitions(self) -> List[int]:
+        """
+        Get the repetitions of the current run
+        :return: A list of repetitions
+        """
+        with self._cursor as cursor:
+            cursor.execute("SELECT DISTINCT run_rep FROM Logs WHERE run_id=?", (self.run_id,))
+            rows = cursor.fetchall()
+            return [row[0] for row in rows]
+
     def write_result(self, **kwargs):
         """
         Log the results of the run to the table, then disable the logger.
