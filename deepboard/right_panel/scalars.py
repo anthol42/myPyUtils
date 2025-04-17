@@ -6,6 +6,32 @@ from datetime import datetime, timedelta
 from fasthtml.common import *
 from fh_plotly import plotly_headers, plotly2fasthtml
 
+COLORS = [
+    "#1f77b4",  # muted blue
+    "#ff7f0e",  # vivid orange
+    "#2ca02c",  # medium green
+    "#d62728",  # brick red
+    "#9467bd",  # muted purple
+    "#8c564b",  # brownish pink
+    "#e377c2",  # pink
+    "#7f7f7f",  # gray
+    "#bcbd22",  # lime yellow
+    "#17becf",  # cyan
+]
+
+PLOTLY_THEME = dict(
+        plot_bgcolor='#111111',     # dark background for the plotting area
+        paper_bgcolor='#111111',    # dark background for the full figure
+        font=dict(color='white'),   # white text everywhere (axes, legend, etc.)
+        xaxis=dict(
+            gridcolor='#333333',    # subtle dark grid lines
+            zerolinecolor='#333333'
+        ),
+        yaxis=dict(
+            gridcolor='#333333',
+            zerolinecolor='#333333'
+        ),
+)
 
 def make_df(socket, tag) -> Tuple[pd.DataFrame, List[int], List[int]]:
     scalars = socket.read_scalar("/".join(tag))
@@ -112,33 +138,6 @@ def make_fig(lines, type: str = "step"):
     return fig
 
 
-COLORS = [
-    "#1f77b4",  # muted blue
-    "#ff7f0e",  # vivid orange
-    "#2ca02c",  # medium green
-    "#d62728",  # brick red
-    "#9467bd",  # muted purple
-    "#8c564b",  # brownish pink
-    "#e377c2",  # pink
-    "#7f7f7f",  # gray
-    "#bcbd22",  # lime yellow
-    "#17becf",  # cyan
-]
-
-PLOTLY_THEME = dict(
-        plot_bgcolor='#111111',     # dark background for the plotting area
-        paper_bgcolor='#111111',    # dark background for the full figure
-        font=dict(color='white'),   # white text everywhere (axes, legend, etc.)
-        xaxis=dict(
-            gridcolor='#333333',    # subtle dark grid lines
-            zerolinecolor='#333333'
-        ),
-        yaxis=dict(
-            gridcolor='#333333',
-            zerolinecolor='#333333'
-        ),
-)
-
 
 def LegendLine(label: str, color: str):
     return Li(
@@ -172,9 +171,12 @@ def ChartType(runID: int, type: str):
     return Div(
         H2("Step/Duration", cls="setup-title"),
         Input(type="checkbox", name="Step chart", id=f"chart-type-step-{runID}", value="step", cls="chart-type-checkbox",
-              checked=type == "step"),
+              checked=type == "step", hx_get=f"/scalars/change_chart?runID={runID}&step={type == 'step'}",
+              hx_swap="outerHTML", hx_target="#chart-type-selector"),
         style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%;",
+        id="chart-type-selector"
     )
+
 def Setup(runID: int, labels: list[tuple], smooth: float):
     return Div(
         H1("Setup", cls="chart-scalar-title"),
@@ -223,7 +225,7 @@ def Chart(runID: int, metric: str, type: str = "step"):
         id=f"chart-{runID}-{metric}",
     )
 
-def Charts(runID: int, type: str = "step"):
+def Charts(runID: int, type: str = "step", swap: bool = False):
     from __main__ import rTable
     socket = rTable.load_run(runID)
     keys = socket.formatted_scalars
@@ -239,6 +241,7 @@ def Charts(runID: int, type: str = "step"):
         ),
         cls="chart-section",
         id=f"charts-section",
+        hx_swap_oob="true" if swap else None,
     )
     return out
 
@@ -260,3 +263,15 @@ def ScalarTab(runID, hidden_lines: List[str] = None):
         Charts(runID),
         style="display; flex; width: 40vw; flex-direction: column; align-items: center; justify-content: center;",
     )
+
+
+def build_scalar_routes(rt):
+    rt("/scalars/change_chart")(change_chart_type)
+
+
+# Interactive Routes
+def change_chart_type(runID: int, step: bool):
+    return (
+        ChartType(runID, type="time" if step else "step"), # We want to toggle it
+        Charts(runID, type="time" if step else "step", swap=True)
+            )
