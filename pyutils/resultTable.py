@@ -366,6 +366,12 @@ class ResultTable:
             for row in rows:
                 print(row)
 
+    def fetch_experiment(self, run_id: int):
+        with self.cursor as cursor:
+            cursor.execute("SELECT * FROM Experiments WHERE run_id=?", (run_id,))
+            row = cursor.fetchone()
+            return row
+
     def set_column_order(self, columns: Dict[str, Optional[int]]):
         """
         Set the order of the column in the result table. If order is None, it will be set to NULL
@@ -594,9 +600,12 @@ class ResultTable:
 if __name__ == "__main__":
     import numpy as np
     rtable = ResultTable()
-    cli = {}
+    cli = {
+        "fract": 0.1,
+        "sample_inputs": True,
+    }
     start = datetime.now()
-    writer = rtable.new_run("Experiment4", "results/myconfig.yml", cli=cli, comment="Dev 0.1")
+    writer = rtable.new_run("Experiment4", "results/myconfig.yml", cli=cli)
     # writer = rtable.load_run(1)
     # print(writer.run_id)
     # val_step = [s.value for s in writer.read_scalar("Valid/acc")]

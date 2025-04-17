@@ -2,12 +2,19 @@ from fasthtml.common import *
 from datetime import datetime
 from .scalars import ScalarTab
 from .config import ConfigView
+from .cli import CliView
 
 def RightPanelContent(session, run_id: int, active_tab: str):
     if active_tab == 'scalars':
         tab_content = ScalarTab(session, run_id)
-    else:
+    elif active_tab == 'cli':
+        tab_content = CliView(run_id)
+    elif active_tab == 'config':
         tab_content = ConfigView(run_id)
+    else:
+        tab_content = Div(
+            P("Invalid tab selected.", cls="error-message")
+        )
     return Div(
         H1(f"Run Id: {run_id}"),
         Div(
@@ -16,6 +23,8 @@ def RightPanelContent(session, run_id: int, active_tab: str):
                 hx_swap='outerHTML'),
             Div('Config', cls='tab active' if active_tab == 'config' else 'tab',
                 hx_get=f'/fillpanel?run_id={run_id}&tab=config', hx_target='#right-panel-content', hx_swap='outerHTML'),
+            Div('Cli', cls='tab active' if active_tab == 'cli' else 'tab',
+                hx_get=f'/fillpanel?run_id={run_id}&tab=cli', hx_target='#right-panel-content', hx_swap='outerHTML'),
             cls='tab-menu'
         ),
         Div(
