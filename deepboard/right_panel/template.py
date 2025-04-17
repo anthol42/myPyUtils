@@ -49,8 +49,8 @@ def RightPanel(session, run_id: int = None):
     ),
 
 
-def fill_panel(run_id: int, tab: str):
-    return RightPanelContent(run_id, tab)
+def fill_panel(session, run_id: int, tab: str):
+    return RightPanelContent(session, run_id, tab)
 
 
 # 418 682 1744
