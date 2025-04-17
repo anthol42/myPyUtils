@@ -18,6 +18,7 @@ COLORS = [
     "#bcbd22",  # lime yellow
     "#17becf",  # cyan
 ]
+HIDDEN_COLOR = "#333333"  # gray for hidden lines
 
 PLOTLY_THEME = dict(
         plot_bgcolor='#111111',     # dark background for the plotting area
@@ -139,24 +140,33 @@ def make_fig(lines, type: str = "step"):
 
 
 
-def LegendLine(label: str, color: str):
-    return Li(
-        Span(cls="legend-icon", style=f"background-color: {color};"),
-        A(label, cls="legend-label"),
-        cls="legend-line"
-    )
-def Legend(runID: int, labels: list[tuple]):
+def LegendLine(session, runID: int, label: str, color: str, hidden: bool):
+    if hidden:
+        return Li(
+            Span(cls="legend-icon", style=f"background-color: {HIDDEN_COLOR};"),
+            A(label, cls="legend-label", style=f"color: {HIDDEN_COLOR};"),
+            hx_get=f"/scalars/show_line?runID={runID}&label={label}",
+            cls="legend-line"
+        )
+    else:
+        return Li(
+            Span(cls="legend-icon", style=f"background-color: {color};"),
+            A(label, cls="legend-label"),
+            hx_get=f"/scalars/hide_line?runID={runID}&label={label}",
+            cls="legend-line"
+        )
+def Legend(session, runID: int, labels: list[tuple]):
     return Div(
         H2("Legend", cls="chart-legend-title"),
         Ul(
-            *[LegendLine(label, color) for label, color in labels],
+            *[LegendLine(session, runID, label, color, hidden) for label, color, hidden in labels],
             cls="chart-legend",
             id=f"chart-legend-{runID}"
         ),
         cls="chart-toolbox",
     )
 
-def Smoother(value: float):
+def Smoother(session, value: float):
     return Div(
         H2("Smoother", cls="setup-title"),
         Div(
@@ -167,7 +177,10 @@ def Smoother(value: float):
         cls="chart-toolbox",
     )
 
-def ChartType(runID: int, type: str):
+def ChartType(session, runID: int):
+    if "chart_type" not in session:
+        session["chart_type"] = "step"
+    type = session["chart_type"]
     return Div(
         H2("Step/Duration", cls="setup-title"),
         Input(type="checkbox", name="Step chart", id=f"chart-type-step-{runID}", value="step", cls="chart-type-checkbox",
@@ -177,28 +190,28 @@ def ChartType(runID: int, type: str):
         id="chart-type-selector"
     )
 
-def Setup(runID: int, labels: list[tuple], smooth: float):
+def Setup(session, runID: int, labels: list[tuple], smooth: float):
     return Div(
         H1("Setup", cls="chart-scalar-title"),
         Div(
             Div(
-                Smoother(smooth),
-                ChartType(runID, type="step"),
+                Smoother(session, smooth),
+                ChartType(session, runID),
                 style="width: 100%; margin-right: 1em; display: flex; flex-direction: column; align-items: flex-start",
             ),
-            Legend(runID, labels),
+            Legend(session, runID, labels),
             cls="chart-setup-container",
         ),
         cls="chart-setup",
     )
 # Components
-def Chart(runID: int, metric: str, type: str = "step"):
+def Chart(session, runID: int, metric: str, type: str = "step"):
     from __main__ import rTable
     socket = rTable.load_run(runID)
     keys = socket.formatted_scalars
     # metrics = {label for split, label in keys}
     splits = {split for split, label in keys}
-
+    hidden_lines = session["hidden_lines"] if "hidden_lines" in session else []
     if type == "step":
         lines = make_step_lines(socket, splits, metric, keys)
     elif type == "time":
@@ -208,6 +221,8 @@ def Chart(runID: int, metric: str, type: str = "step"):
 
     # # Sort lines by label
     lines.sort(key=lambda x: x[0])
+    # Hide lines if needed
+    lines = [line for line in lines if line[0] not in hidden_lines]
     fig = make_fig(lines, type=type)
 
     return Div(
@@ -225,16 +240,17 @@ def Chart(runID: int, metric: str, type: str = "step"):
         id=f"chart-{runID}-{metric}",
     )
 
-def Charts(runID: int, type: str = "step", swap: bool = False):
+def Charts(session, runID: int, swap: bool = False):
     from __main__ import rTable
     socket = rTable.load_run(runID)
     keys = socket.formatted_scalars
     metrics = {label for split, label in keys}
+    type = session["chart_type"] if "chart_type" in session else "step"
     out = Div(
             H1("Charts", cls="chart-scalar-title"),
         Ul(
             *[
-                Li(Chart(runID, metric, type=type), cls="chart-list-item")
+                Li(Chart(session, runID, metric, type=type), cls="chart-list-item")
                 for metric in metrics
             ],
             cls="chart-list",
@@ -245,33 +261,56 @@ def Charts(runID: int, type: str = "step", swap: bool = False):
     )
     return out
 
-def ScalarTab(runID, hidden_lines: List[str] = None):
+def ScalarTab(session, runID, swap: bool = False):
+    if 'hidden_lines' not in session:
+        session['hidden_lines'] = ["Train_2"]
     from __main__ import rTable
     socket = rTable.load_run(runID)
     keys = socket.formatted_scalars
     splits = {split for split, label in keys}
     # Get repetitions
     available_rep = socket.get_repetitions()
-    line_names = [(f'{split}_{rep}', COLORS[i % len(COLORS)]) for i, split in enumerate(splits) for rep in
+    line_names = [(f'{split}_{rep}', COLORS[i % len(COLORS)], f'{split}_{rep}' in session['hidden_lines']) for i, split in enumerate(splits) for rep in
                   available_rep]
     # Sort lines by label
     line_names.sort(key=lambda x: x[0])
-    if hidden_lines is not None:
-        line_names = [line for line in line_names if line[0] not in hidden_lines]
     return Div(
-        Setup(runID, line_names, smooth=0.),
-        Charts(runID),
+        Setup(session, runID, line_names, smooth=0.),
+        Charts(session, runID),
         style="display; flex; width: 40vw; flex-direction: column; align-items: center; justify-content: center;",
+        id="scalar-tab",
+        hx_swap_oob="true" if swap else None,
     )
 
 
 def build_scalar_routes(rt):
     rt("/scalars/change_chart")(change_chart_type)
+    rt("/scalars/hide_line")(hide_line)
+    rt("/scalars/show_line")(show_line)
 
 
 # Interactive Routes
-def change_chart_type(runID: int, step: bool):
+def change_chart_type(session, runID: int, step: bool):
+    new_type = "time" if step else "step"
+    session["chart_type"] = new_type
     return (
-        ChartType(runID, type="time" if step else "step"), # We want to toggle it
-        Charts(runID, type="time" if step else "step", swap=True)
+        ChartType(session, runID), # We want to toggle it
+        Charts(session, runID, swap=True)
             )
+
+def hide_line(session, runID: int, label: str):
+    if 'hidden_lines' not in session:
+        session['hidden_lines'] = []
+
+    session['hidden_lines'].append(label)
+    return ScalarTab(session, runID, swap=True)
+
+
+def show_line(session, runID: int, label: str):
+    if 'hidden_lines' not in session:
+        session['hidden_lines'] = []
+
+    if label in session['hidden_lines']:
+        session['hidden_lines'].remove(label)
+
+    return ScalarTab(session, runID, swap=True)

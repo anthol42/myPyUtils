@@ -39,22 +39,22 @@ async def get(fname:str, ext:str):
 
 
 @rt("/")
-def get():
+def get(session):
     return (Title("Main page"),
             Div(id="custom-menu"),
             Div(
                 DataGrid(),
-                RightPanel(),
+                RightPanel(session),
                 cls='container',
                 id="container",
             )
             )
 
 @rt("/reset")
-def get():
+def get(session):
     return Div(
                 DataGrid(),
-                RightPanel(),
+                RightPanel(session),
                 cls='container',
                 id = "container",
                 hx_swap_oob='outerHTML'
@@ -62,9 +62,9 @@ def get():
 
 # Choose a row in the datagrid
 @rt("/click_row")
-def get(run_id: int):
+def get(session, run_id: int):
     # Return the image
-    return DataGrid(row_selected=run_id), RightPanel(run_id)
+    return DataGrid(row_selected=run_id), RightPanel(session, run_id)
 
 
 # Dropdown menu when right-cliked

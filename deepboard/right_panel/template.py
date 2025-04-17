@@ -2,9 +2,9 @@ from fasthtml.common import *
 from datetime import datetime
 from .scalars import ScalarTab
 
-def RightPanelContent(run_id: int, active_tab: str):
+def RightPanelContent(session, run_id: int, active_tab: str):
     if active_tab == 'scalars':
-        tab_content = ScalarTab(run_id)
+        tab_content = ScalarTab(session, run_id)
     else:
         tab_content = None
     return Div(
@@ -25,13 +25,13 @@ def RightPanelContent(run_id: int, active_tab: str):
         id="right-panel-content"
     ),
 
-def OpenPanel(run_id: int, active_tab: str = 'scalars'):
+def OpenPanel(session, run_id: int, active_tab: str = 'scalars'):
     return Div(
-        RightPanelContent(run_id, active_tab),
+        RightPanelContent(session, run_id, active_tab),
         cls="open-right-panel"
     )
 
-def RightPanel(run_id: int = None):
+def RightPanel(session, run_id: int = None):
     if run_id is None:
         placeholder_text = 'Select an item to see the content.'
     else:
@@ -43,7 +43,7 @@ def RightPanel(run_id: int = None):
             hx_target="#container",
             cls="close-button",
         ) if run_id is not None else None,
-        Div(P(placeholder_text, cls="right-panel-placeholder")) if run_id is None else OpenPanel(run_id),
+        Div(P(placeholder_text, cls="right-panel-placeholder")) if run_id is None else OpenPanel(session, run_id),
         id='right-panel',
         hx_swap_oob='outerHTML'
     ),
