@@ -1,10 +1,9 @@
-from pyutils.resultTable import ResultTable
 import plotly.graph_objects as go
 import pandas as pd
 from typing import *
 from datetime import datetime, timedelta
 from fasthtml.common import *
-from fh_plotly import plotly_headers, plotly2fasthtml
+from fh_plotly import plotly2fasthtml
 
 COLORS = [
     "#1f77b4",  # muted blue
@@ -87,10 +86,26 @@ def make_time_lines(socket, splits: set[str], metric: str, keys: set[tuple[str, 
                 ))
     return lines
 
-def make_fig(lines, type: str = "step"):
+def ema(values, alpha):
+    """
+    Compute the Exponential Moving Average (EMA) of a list of values.
+
+    Parameters:
+    - values (list or numpy array): The data series.
+    - alpha (float): Smoothing factor (between 0 and 1).
+
+    Returns:
+    - list: EMA-smoothed values.
+    """
+    return values.ewm(alpha=alpha, adjust=False).mean()
+
+def make_fig(lines, type: str = "step", smoothness: float = 0.):
     fig = go.Figure()
 
     for label, steps, values, color, epochs in lines:
+        # Smooth the values
+        if smoothness > 0:
+            values = ema(values, 1.01 - smoothness / 100)
         if epochs is not None:
             additional_setup = dict(hovertext=values, customdata=[[e, label] for e in epochs],
                                     hovertemplate="%{customdata[1]} : %{y:.4f} | Epoch: %{customdata[0]}<extra></extra>")
@@ -166,12 +181,16 @@ def Legend(session, runID: int, labels: list[tuple]):
         cls="chart-toolbox",
     )
 
-def Smoother(session, value: float):
+def Smoother(session, runID: int):
+    if "smoother_value" not in session:
+        session["smoother_value"] = 1
+    value = session["smoother_value"]
     return Div(
         H2("Smoother", cls="setup-title"),
         Div(
-            P(value),
-            Input(type="range", min=0, max=100, value=1, id=f"chart-smoother"),
+            P(f"{value - 1}%"),
+            Input(type="range", min=1, max=101, value=value, id=f"chart-smoother", name="smoother",
+                  hx_get=f"/scalars/change_smoother?runID={runID}", hx_trigger="change"),
             cls="chart-smoother-container",
         ),
         cls="chart-toolbox",
@@ -190,12 +209,12 @@ def ChartType(session, runID: int):
         id="chart-type-selector"
     )
 
-def Setup(session, runID: int, labels: list[tuple], smooth: float):
+def Setup(session, runID: int, labels: list[tuple]):
     return Div(
         H1("Setup", cls="chart-scalar-title"),
         Div(
             Div(
-                Smoother(session, smooth),
+                Smoother(session, runID),
                 ChartType(session, runID),
                 style="width: 100%; margin-right: 1em; display: flex; flex-direction: column; align-items: flex-start",
             ),
@@ -212,6 +231,7 @@ def Chart(session, runID: int, metric: str, type: str = "step"):
     # metrics = {label for split, label in keys}
     splits = {split for split, label in keys}
     hidden_lines = session["hidden_lines"] if "hidden_lines" in session else []
+    smoothness = session["smoother_value"] - 1 if "smoother_value" in session else 0
     if type == "step":
         lines = make_step_lines(socket, splits, metric, keys)
     elif type == "time":
@@ -223,7 +243,7 @@ def Chart(session, runID: int, metric: str, type: str = "step"):
     lines.sort(key=lambda x: x[0])
     # Hide lines if needed
     lines = [line for line in lines if line[0] not in hidden_lines]
-    fig = make_fig(lines, type=type)
+    fig = make_fig(lines, type=type, smoothness=smoothness)
 
     return Div(
         Div(
@@ -275,7 +295,7 @@ def ScalarTab(session, runID, swap: bool = False):
     # Sort lines by label
     line_names.sort(key=lambda x: x[0])
     return Div(
-        Setup(session, runID, line_names, smooth=0.),
+        Setup(session, runID, line_names),
         Charts(session, runID),
         style="display; flex; width: 40vw; flex-direction: column; align-items: center; justify-content: center;",
         id="scalar-tab",
@@ -287,6 +307,7 @@ def build_scalar_routes(rt):
     rt("/scalars/change_chart")(change_chart_type)
     rt("/scalars/hide_line")(hide_line)
     rt("/scalars/show_line")(show_line)
+    rt("/scalars/change_smoother")(change_smoother)
 
 
 # Interactive Routes
@@ -313,4 +334,8 @@ def show_line(session, runID: int, label: str):
     if label in session['hidden_lines']:
         session['hidden_lines'].remove(label)
 
+    return ScalarTab(session, runID, swap=True)
+
+def change_smoother(session, runID: int, smoother: int):
+    session["smoother_value"] = smoother
     return ScalarTab(session, runID, swap=True)
