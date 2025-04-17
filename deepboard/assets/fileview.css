@@ -1,0 +1,13 @@
+.config-part {
+    font-size: 1em;
+    font-family: monospace;
+    color: #bbb;
+    margin: 0;
+    white-space: pre-wrap;
+}
+.file-view {
+    background-color: #1e1e1e;
+    padding: 1em;
+    border-radius: 0.25em;
+    overflow: auto;
+}

@@ -6,7 +6,7 @@ from pathlib import PurePath
 from datetime import datetime, date
 import hashlib
 import shutil
-
+from glob import glob
 
 def adapt_date_iso(val):
     """Adapt datetime.date to ISO 8601 date."""
@@ -284,6 +284,19 @@ class ResultTable:
             os.mkdir(self.configs_path)
 
         self.db_path = db_path
+
+    def load_config(self, run_id: int) -> str:
+        """
+        Load the configuration file of a given run id
+        :param run_id: The run id
+        :return: The path to the configuration file
+        """
+        valid_files = glob(str(self.configs_path / f"{run_id}.*"))
+        if len(valid_files) > 1:
+            print(f"Warning: More than one configuration file found for run {run_id}. ")
+        with open(valid_files[0], 'r') as f:
+            content = f.read()
+        return content
 
     def load_run(self, run_id):
         logwriter = LogWriter(self.db_path, run_id, datetime.now())

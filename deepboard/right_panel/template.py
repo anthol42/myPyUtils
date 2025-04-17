@@ -1,12 +1,13 @@
 from fasthtml.common import *
 from datetime import datetime
 from .scalars import ScalarTab
+from .config import ConfigView
 
 def RightPanelContent(session, run_id: int, active_tab: str):
     if active_tab == 'scalars':
         tab_content = ScalarTab(session, run_id)
     else:
-        tab_content = None
+        tab_content = ConfigView(run_id)
     return Div(
         H1(f"Run Id: {run_id}"),
         Div(

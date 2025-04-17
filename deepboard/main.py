@@ -21,6 +21,7 @@ app = FastHTMLWithLiveReload(
         Link(rel='stylesheet', href='assets/theme.css', type='text/css'),
         Link(rel='stylesheet', href='assets/right_panel.css', type='text/css'),
         Link(rel='stylesheet', href='assets/charts.css', type='text/css'),
+        Link(rel='stylesheet', href='assets/fileview.css', type='text/css'),
         Link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css", rel="stylesheet"),
         plotly_headers,
         Script(src="assets/base.js"),
