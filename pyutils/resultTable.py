@@ -465,7 +465,7 @@ class ResultTable:
                    col_order is not None]
         columns.sort(key=lambda x: x[1])
 
-        table = [[row[col[0]] for col in columns] for key, row in exp_info.items()]
+        table = [[row.get(col[0]) for col in columns] for key, row in exp_info.items()]
         return [col[2] for col in columns], [col[0] for col in columns], table
 
     @property
@@ -583,7 +583,7 @@ if __name__ == "__main__":
     rtable = ResultTable()
     cli = {}
     start = datetime.now()
-    writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli, comment="Dev 0.1")
+    writer = rtable.new_run("Experiment4", "results/myconfig.yml", cli=cli, comment="Dev 0.1")
     # writer = rtable.load_run(1)
     # print(writer.run_id)
     # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
@@ -597,10 +597,12 @@ if __name__ == "__main__":
             for i in range(100):
                 writer.add_scalar("Train/acc", np.sqrt(i / 10) / 3.2, epoch=e)
                 writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 3.5, epoch=e)
+                writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.5, epoch=e)
+                writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 3.8, epoch=e)
                 time.sleep(0.01)
                 print(rep, e, i)
 
-    writer.write_result(loss=0.33, accuracy=0.985)
+    writer.write_result(loss=0.44, accuracy=0.95, f1=0.92)
     columns, col_ids, data = rtable.get_results()
     print(columns)
     for row in data:

@@ -1,8 +1,12 @@
 from fasthtml.common import *
 from datetime import datetime
-
+from .scalars import ScalarTab
 
 def RightPanelContent(run_id: int, active_tab: str):
+    if active_tab == 'scalars':
+        tab_content = ScalarTab(run_id)
+    else:
+        tab_content = None
     return Div(
         H1(f"Run Id: {run_id}"),
         Div(
@@ -14,6 +18,7 @@ def RightPanelContent(run_id: int, active_tab: str):
             cls='tab-menu'
         ),
         Div(
+            tab_content,
             id='tab-content', cls='tab-content'
         ),
         cls="right-panel-content",
@@ -46,3 +51,6 @@ def RightPanel(run_id: int = None):
 
 def fill_panel(run_id: int, tab: str):
     return RightPanelContent(run_id, tab)
+
+
+# 418 682 1744

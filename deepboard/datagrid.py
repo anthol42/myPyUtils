@@ -59,7 +59,14 @@ def DataGrid(rename_col: str = None, sort_by: str = None, sort_order: str = None
     from __main__ import rTable
     columns, col_ids, data = rTable.get_results()
     if sort_by is not None and sort_order is not None:
-        data = sorted(data, key=lambda x: x[col_ids.index(sort_by)], reverse=(sort_order == "desc"))
+        data = sorted(
+            data,
+            key=lambda x: (
+                x[col_ids.index(sort_by)] is None,  # True = 1, False = 0 — Nones last
+                x[col_ids.index(sort_by)]
+            ),
+            reverse=(sort_order == "desc")
+        )
 
     run_ids = [row[col_ids.index("run_id")] for row in data]
     return Div(

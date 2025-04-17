@@ -40,7 +40,6 @@
     justify-content: center;
     align-items: left;
     width: 100%;
-    padding-left: 0.5rem;
 }
 
 .chart-legend {
@@ -53,6 +52,9 @@
     border-radius: 0.25rem;
     padding-left: 0;
     margin-left: 0.5rem;
+    max-height: 20vh;
+    overflow-y: scroll;
+    overflow-x: hidden;
 }
 .legend-line {
     display: flex;
@@ -89,6 +91,14 @@
     margin-bottom: 0;
 }
 
+.chart-setup-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding-left: 0.5rem;
+ }
+
 .chart-smoother-container{
     display: flex;
     justify-content: center;
@@ -101,5 +111,64 @@
 }
 
 input[type="range"] {
-    width: 100%;
+    width: 80%;
+    max-width: 80%;
+    box-sizing: border-box;
+}
+
+.chart-list {
+  width: 100%;
+  padding-left: 0;
+}
+.chart-list-item {
+    list-style-type: none;
+    text-decoration: none;
+    margin-left: 0;
+    margin-bottom: 1em;
+}
+
+.chart-scalar-title {
+    font-family: system-ui, sans-serif;
+    color: #fff;
+    font-size: 2rem;
+    margin-left: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #ccc; /* adjust thickness and color */
+    margin-bottom: 1rem;            /* space below the line */
+}
+
+.chart-section {
+    margin-top: 0.5rem;
+}
+
+.chart-type-checkbox {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background-color: #f0f8ff;      /* light blue background */
+    cursor: pointer;
+    transition: all 0.1s ease-in-out;
+    display: inline-block;
+    position: relative;
+}
+
+.chart-type-checkbox:checked {
+    background-color: #007BFF;       /* blue when checked */
+    border-color: #0056b3;
+}
+
+.chart-type-checkbox:checked::after {
+
+    color: white;
+    font-size: 16px;
+    position: absolute;
+    top: 0;
+    left: 5px;
+}
+
+.setup-title {
+    font-family: system-ui, sans-serif;
+    color: #fff;
+    font-size: 1.5rem;
 }

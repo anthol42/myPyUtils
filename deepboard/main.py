@@ -5,6 +5,7 @@ from datagrid import right_click_handler as right_click_handler_dg
 from utils import prepare_db
 from pyutils.resultTable import ResultTable
 from right_panel import RightPanel, build_right_panel_routes
+from fh_plotly import plotly_headers, plotly2fasthtml
 
 DATABASE = "../pyutils/results/result_table.db"
 
@@ -19,7 +20,9 @@ app = FastHTMLWithLiveReload(
     hdrs=(
         Link(rel='stylesheet', href='assets/theme.css', type='text/css'),
         Link(rel='stylesheet', href='assets/right_panel.css', type='text/css'),
+        Link(rel='stylesheet', href='assets/charts.css', type='text/css'),
         Link(href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css", rel="stylesheet"),
+        plotly_headers,
         Script(src="assets/base.js"),
         SortableColumnsJs(),
     ),
