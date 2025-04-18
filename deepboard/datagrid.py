@@ -98,6 +98,7 @@ def DataGrid(session, rename_col: str = None, row_selected: int = None):
                 Tbody(
                     *[Row(row, run_id, selected=run_id == row_selected) for row, run_id in zip(data, run_ids)],
                 ),
+                cls="data-grid"
             ),
             cls="scroll-container"
         ),

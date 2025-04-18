@@ -155,6 +155,16 @@ class LogWriter:
             rows = cursor.fetchall()
             return [Scalar(*row[1:]) for row in rows]
 
+    def get_hparams(self) -> Dict[str, Any]:
+        """
+        Get the hyperparameters of the current run
+        :return: A dict of hyperparameters
+        """
+        with self._cursor as cursor:
+            cursor.execute("SELECT metric, value FROM Results WHERE run_id=? AND is_hparam=1", (self.run_id,))
+            rows = cursor.fetchall()
+            return {row[0]: row[1] for row in rows}
+
     def get_repetitions(self) -> List[int]:
         """
         Get the repetitions of the current run
@@ -176,8 +186,8 @@ class LogWriter:
             self._flush(tag)
 
         # Then, prepare the data to save
-        query = "INSERT INTO Results (run_id, metric, value) VALUES (?, ?, ?)"
-        data = [(self.run_id, key, value) for key, value in kwargs.items()]
+        query = "INSERT INTO Results (run_id, metric, value, is_hparam) VALUES (?, ?, ?, ?)"
+        data = [(self.run_id, key, value, False) for key, value in kwargs.items()]
         with self._cursor as cursor:
             cursor.executemany(query, data)
 
@@ -186,6 +196,19 @@ class LogWriter:
 
         # Disable the logger
         self.enabled = False
+
+    def add_hparams(self, **kwargs):
+        """
+        Add hyperparameters to the result table
+        :param kwargs: The hyperparameters to save
+        :return: None
+        """
+
+        # Prepare the data to save
+        query = "INSERT INTO Results (run_id, metric, value, is_hparam) VALUES (?, ?, ?, ?)"
+        data = [(self.run_id, key, value, True) for key, value in kwargs.items()]
+        with self._cursor as cursor:
+            cursor.executemany(query, data)
 
     @property
     def status(self) -> str:
@@ -606,7 +629,8 @@ class ResultTable:
             id_ INTEGER PRIMARY KEY AUTOINCREMENT,
             run_id INTEGER NOT NULL,
             metric varchar(128) NOT NULL,
-            value REAL NOT NULL,
+            value NOT NULL,
+            is_hparam INTEGER DEFAULT 0,
             FOREIGN KEY (run_id) REFERENCES Experiments(run_id)
         );
         """)
@@ -673,11 +697,13 @@ if __name__ == "__main__":
     import numpy as np
     rtable = ResultTable()
     cli = {
-        "fract": 1.,
+        "fract": 0.25,
         "sample_inputs": False,
+        "dataset": "Pâques",
     }
     start = datetime.now()
     writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli)
+    writer.add_hparams(**cli)
     # writer = rtable.load_run(2)
     # print(writer.run_id)
     # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
@@ -696,7 +722,7 @@ if __name__ == "__main__":
                 time.sleep(0.05)
                 print(rep, e, i)
 
-    writer.write_result(loss=0.37, accuracy=0.95, f1=0.93)
+    writer.write_result(loss=0.37, accuracy=0.92, f1=0.90)
     columns, col_ids, data = rtable.get_results()
     print(columns)
     for row in data:

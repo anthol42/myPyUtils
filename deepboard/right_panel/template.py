@@ -3,6 +3,7 @@ from datetime import datetime
 from .scalars import ScalarTab
 from .config import ConfigView
 from .cli import CliView
+from .hparams import HParamsView
 
 def reset_scalar_session(session):
     session["scalars"] = dict(
@@ -18,6 +19,8 @@ def RightPanelContent(session, run_id: int, active_tab: str):
         tab_content = CliView(run_id)
     elif active_tab == 'config':
         tab_content = ConfigView(run_id)
+    elif active_tab == 'hparams':
+        tab_content = HParamsView(run_id)
     else:
         tab_content = Div(
             P("Invalid tab selected.", cls="error-message")
@@ -32,6 +35,8 @@ def RightPanelContent(session, run_id: int, active_tab: str):
                 hx_get=f'/fillpanel?run_id={run_id}&tab=config', hx_target='#right-panel-content', hx_swap='outerHTML'),
             Div('Cli', cls='tab active' if active_tab == 'cli' else 'tab',
                 hx_get=f'/fillpanel?run_id={run_id}&tab=cli', hx_target='#right-panel-content', hx_swap='outerHTML'),
+            Div('HParams', cls='tab active' if active_tab == 'hparams' else 'tab',
+                hx_get=f'/fillpanel?run_id={run_id}&tab=hparams', hx_target='#right-panel-content', hx_swap='outerHTML'),
             cls='tab-menu'
         ),
         Div(

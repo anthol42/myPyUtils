@@ -17,7 +17,7 @@ h1 {
   color: #fff;
 }
 
-table {
+.data-grid {
   width: 100%;
   border-collapse: collapse;
   background-color: #1e1e1e;
@@ -25,22 +25,22 @@ table {
   border-radius: 8px;
 }
 
-td {
+.data-grid td {
   padding: 1em;
   text-align: left;
 }
 
-tr:nth-child(even) {
+.data-grid tr:nth-child(even) {
   background-color: #1a1a1a;
 }
 
-td {
+.data-grid td {
   border-bottom: 1px solid #333;
   white-space: nowrap;
 }
 
 /* Sticky header */
-thead th {
+.data-grid thead th {
   position: sticky;
   top: 0;
   z-index: 2;
@@ -49,14 +49,14 @@ thead th {
   border-bottom: 1px solid #333;
   white-space: nowrap;
 }
-thead th div {
+.data-grid thead th div {
   background-color: inherit;
   padding: 1em; /* or whatever spacing you want */
 }
 
 /* Sticky first column */
-tbody td:first-child,
-thead th:first-child {
+.data-grid tbody td:first-child,
+.data-grid thead th:first-child {
   position: sticky;
   left: 0;
   z-index: 1;
@@ -64,7 +64,7 @@ thead th:first-child {
 }
 
 /* Make sure the header cell in the top-left corner stays above others */
-thead th:first-child {
+.data-grid thead th:first-child {
   z-index: 3;
 }
 
@@ -197,3 +197,43 @@ thead th:first-child {
   .submenu .menu-item:hover {
     background-color: #444;
   }
+
+  /* HParams table*/
+.hparams-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1e1e1e;
+  color: #ccc;
+  border-radius: 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-size: 0.95rem;
+  box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.05);
+}
+
+.hparams-table th,
+.hparams-table td {
+  padding: 0.6em 1em;
+  text-align: left;
+  /*border-bottom: 1px solid #2e2e2e;*/
+}
+
+.hparams-table th {
+  background-color: #2a2a2a;
+  color: #eee;
+  font-weight: 600;
+}
+
+.hparams-table tr:last-child td {
+  border-bottom: none;
+}
+
+.hparams-table tr:hover td {
+  background-color: #2c2c2c;
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Optional: make long values break nicely */
+.hparams-table td {
+  word-break: break-word;
+}
