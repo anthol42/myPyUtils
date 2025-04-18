@@ -453,11 +453,11 @@ class ResultTable:
         exp_info = {}
         with self.cursor as cursor:
             if run_id is None:
-                cursor.execute("SELECT R.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, R.metric, R.value "
-                               "FROM Results R, Experiments E WHERE R.run_id=E.run_id")
+                cursor.execute("SELECT E.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, R.metric, R.value "
+                               "FROM Experiments E LEFT JOIN Results R ON E.run_id = R.run_id")
             else:
-                cursor.execute("SELECT R.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, R.metric, R.value "
-                               "FROM Results R, Experiments E WHERE R.run_id=E.run_id AND R.run_id=?", (run_id, ))
+                cursor.execute("SELECT E.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, R.metric, R.value "
+                               "FROM Experiments E LEFT JOIN Results R ON E.run_id = R.run_id WHERE E.run_id=?", (run_id, ))
             rows = cursor.fetchall()
 
         for row in rows:
@@ -601,7 +601,7 @@ if __name__ == "__main__":
     import numpy as np
     rtable = ResultTable()
     cli = {
-        "fract": 0.1,
+        "fract": 1.,
         "sample_inputs": True,
     }
     start = datetime.now()
@@ -621,10 +621,10 @@ if __name__ == "__main__":
                 writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 3.5, epoch=e)
                 writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.5, epoch=e)
                 writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 3.8, epoch=e)
-                time.sleep(0.01)
+                time.sleep(0.05)
                 print(rep, e, i)
 
-    writer.write_result(loss=0.44, accuracy=0.95, f1=0.92)
+    writer.write_result(loss=0.37, accuracy=0.96, f1=0.95)
     columns, col_ids, data = rtable.get_results()
     print(columns)
     for row in data:

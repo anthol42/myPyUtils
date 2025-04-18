@@ -73,6 +73,7 @@ thead th:first-child {
   max-width: 50vw;
   overflow: auto;
   position: relative;
+  box-shadow: 0 -1px 7px 0.5px rgba(255, 255, 255, 0.2);
   border-radius: 8px;
 }
 
