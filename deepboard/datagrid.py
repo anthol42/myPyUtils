@@ -55,8 +55,14 @@ def Row(data, run_id, selected: bool):
         cls="table-row" if not selected else "table-row-selected",
     )
 
-def DataGrid(rename_col: str = None, sort_by: str = None, sort_order: str = None, row_selected: int = None):
+def DataGrid(session, rename_col: str = None, row_selected: int = None):
     from __main__ import rTable
+
+    if "datagrid" not in session:
+        session["datagrid"] = dict()
+
+    sort_by: str = session["datagrid"].get("sort_by", None)
+    sort_order: str = session["datagrid"].get("sort_order", None)
     columns, col_ids, data = rTable.get_results()
     if sort_by is not None and sort_order is not None:
         data = sorted(
@@ -172,52 +178,56 @@ def right_click_handler(elementId: str, top: int, left: int):
     )
 
 
-async def hide_column(col: str):
+async def hide_column(session, col: str):
     from __main__ import rTable
     rTable.hide_column(col)
 
     # Return the datagrid
-    return DataGrid()
+    return DataGrid(session)
 
-async def show_column(col: str, after: str):
+async def show_column(session, col: str, after: str):
     from __main__ import rTable
     cols = rTable.result_columns
     if after not in cols:
         print(f"[WARNING]: Did not find column: {after}")
-        return DataGrid()
+        return DataGrid(session)
     pos = cols[after][0] + 1
     print(f"Show column: {col} after {after} position {pos}")
     rTable.show_column(col, pos)
 
     # Return the datagrid
-    return DataGrid()
+    return DataGrid(session)
 
-async def get_rename_column(col: str):
+async def get_rename_column(session, col: str):
     from __main__ import rTable
     if col not in rTable.result_columns:
         print(f"[WARNING]: Did not find column: {col}")
-        return DataGrid()
-    return DataGrid(rename_col=col)
+        return DataGrid(session)
+    return DataGrid(session, rename_col=col)
 
-async def post_rename_column(col_id: str, new_name: str):
+async def post_rename_column(session, col_id: str, new_name: str):
     from __main__ import rTable
     if col_id not in rTable.result_columns:
         print(f"[WARNING]: Did not find column: {col_id}")
-        return DataGrid()
+        return DataGrid(session)
     rTable.set_column_alias({col_id: new_name})
 
     # Return the datagrid
-    return DataGrid()
+    return DataGrid(session)
 
-async def sort(by: str, order: str):
-    if order == "" or order is None: # Sorting has been deactivated
-        return DataGrid()
-    return DataGrid(sort_by=by, sort_order=order) # Sort by the column given the order
+async def sort(session, by: str, order: str):
+    if "datagrid" not in session:
+        session["datagrid"] = dict(
+            sort_by=None,
+            sort_order=None
+        )
+    session["datagrid"]["sort_by"] = by
+    session["datagrid"]["sort_order"] = order
+    return DataGrid(session)
 
-async def reorder_columns(order: str):
+async def reorder_columns(session, order: str):
     from __main__ import rTable
     order = order.split(",")
     prep_order = {col_id: i + 1 for i, col_id in enumerate(order)}
-    print(prep_order)
     rTable.set_column_order(prep_order)
-    return DataGrid()
+    return DataGrid(session)

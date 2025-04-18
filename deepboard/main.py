@@ -5,7 +5,7 @@ from datagrid import right_click_handler as right_click_handler_dg
 from utils import prepare_db
 from pyutils.resultTable import ResultTable
 from right_panel import RightPanel, build_right_panel_routes, reset_scalar_session
-from fh_plotly import plotly_headers, plotly2fasthtml
+from fh_plotly import plotly_headers
 
 DATABASE = "../pyutils/results/result_table.db"
 
@@ -44,7 +44,7 @@ def get(session):
     return (Title("Main page"),
             Div(id="custom-menu"),
             Div(
-                DataGrid(),
+                DataGrid(session),
                 RightPanel(session),
                 cls='container',
                 id="container",
@@ -54,7 +54,7 @@ def get(session):
 @rt("/reset")
 def get(session):
     return Div(
-                DataGrid(),
+                DataGrid(session),
                 RightPanel(session),
                 cls='container',
                 id = "container",
@@ -66,7 +66,7 @@ def get(session):
 def get(session, run_id: int):
     reset_scalar_session(session)
     # Return the image
-    return DataGrid(row_selected=run_id), RightPanel(session, run_id)
+    return DataGrid(session, row_selected=run_id), RightPanel(session, run_id)
 
 
 # Dropdown menu when right-cliked
