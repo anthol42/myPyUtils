@@ -6,6 +6,11 @@ from markupsafe import Markup
 def CliView(runID: int):
     from __main__ import rTable
     row = rTable.fetch_experiment(runID)
+    if row[4] == "":
+        return Div(
+            P(Markup(""), cls="config-part"),
+            cls="file-view",
+        )
     cli = {keyvalue.split("=")[0]:"=".join(keyvalue.split("=")[1:]) for keyvalue in row[4].split(" ")}
     print(cli)
     lines = [P(Markup(f"- {key}: {value}"), cls="config-part") for key, value in cli.items()]
