@@ -61,9 +61,14 @@ def DataGrid(session, rename_col: str = None, row_selected: int = None):
     if "datagrid" not in session:
         session["datagrid"] = dict()
 
-    sort_by: str = session["datagrid"].get("sort_by", None)
-    sort_order: str = session["datagrid"].get("sort_order", None)
+    sort_by: Optional[str] = session["datagrid"].get("sort_by", None)
+    sort_order: Optional[str] = session["datagrid"].get("sort_order", None)
     columns, col_ids, data = rTable.get_results()
+    # If the columns to sort by is hidden, we reset it
+    if sort_by is not None and sort_by not in col_ids:
+        session["datagrid"]["sort_by"] = sort_by = None
+        session["datagrid"]["sort_order"] = sort_order = None
+
     if sort_by is not None and sort_order is not None:
         data = sorted(
             data,
@@ -92,8 +97,8 @@ def DataGrid(session, rename_col: str = None, row_selected: int = None):
             Tbody(
                 *[Row(row, run_id, selected=run_id == row_selected) for row, run_id in zip(data, run_ids)],
             ),
-            id="experiment-table",
         ),
+        id="experiment-table",
         cls="table-container"
     ),
 
