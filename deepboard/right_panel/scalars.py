@@ -182,9 +182,9 @@ def Legend(session, runID: int, labels: list[tuple]):
     )
 
 def Smoother(session, runID: int):
-    if "smoother_value" not in session:
-        session["smoother_value"] = 1
-    value = session["smoother_value"]
+    if "smoother_value" not in session["scalars"]:
+        session["scalars"]["smoother_value"] = 1
+    value = session["scalars"]["smoother_value"]
     return Div(
         H2("Smoother", cls="setup-title"),
         Div(
@@ -197,9 +197,9 @@ def Smoother(session, runID: int):
     )
 
 def ChartType(session, runID: int):
-    if "chart_type" not in session:
-        session["chart_type"] = "step"
-    type = session["chart_type"]
+    if "chart_type" not in session["scalars"]:
+        session["scalars"]["chart_type"] = "step"
+    type = session["scalars"]["chart_type"]
     return Div(
         H2("Step/Duration", cls="setup-title"),
         Input(type="checkbox", name="Step chart", id=f"chart-type-step-{runID}", value="step", cls="chart-type-checkbox",
@@ -230,8 +230,8 @@ def Chart(session, runID: int, metric: str, type: str = "step"):
     keys = socket.formatted_scalars
     # metrics = {label for split, label in keys}
     splits = {split for split, label in keys}
-    hidden_lines = session["hidden_lines"] if "hidden_lines" in session else []
-    smoothness = session["smoother_value"] - 1 if "smoother_value" in session else 0
+    hidden_lines = session["scalars"]["hidden_lines"] if "hidden_lines" in session["scalars"] else []
+    smoothness = session["scalars"]["smoother_value"] - 1 if "smoother_value" in session["scalars"] else 0
     if type == "step":
         lines = make_step_lines(socket, splits, metric, keys)
     elif type == "time":
@@ -265,7 +265,7 @@ def Charts(session, runID: int, swap: bool = False):
     socket = rTable.load_run(runID)
     keys = socket.formatted_scalars
     metrics = {label for split, label in keys}
-    type = session["chart_type"] if "chart_type" in session else "step"
+    type = session["scalars"]["chart_type"] if "chart_type" in session["scalars"] else "step"
     out = Div(
             H1("Charts", cls="chart-scalar-title"),
         Ul(
@@ -283,14 +283,14 @@ def Charts(session, runID: int, swap: bool = False):
 
 def ScalarTab(session, runID, swap: bool = False):
     if 'hidden_lines' not in session:
-        session['hidden_lines'] = ["Train_2"]
+        session["scalars"]['hidden_lines'] = []
     from __main__ import rTable
     socket = rTable.load_run(runID)
     keys = socket.formatted_scalars
     splits = {split for split, label in keys}
     # Get repetitions
     available_rep = socket.get_repetitions()
-    line_names = [(f'{split}_{rep}', COLORS[i % len(COLORS)], f'{split}_{rep}' in session['hidden_lines']) for i, split in enumerate(splits) for rep in
+    line_names = [(f'{split}_{rep}', COLORS[i % len(COLORS)], f'{split}_{rep}' in session["scalars"]['hidden_lines']) for i, split in enumerate(splits) for rep in
                   available_rep]
     # Sort lines by label
     line_names.sort(key=lambda x: x[0])
@@ -313,29 +313,29 @@ def build_scalar_routes(rt):
 # Interactive Routes
 def change_chart_type(session, runID: int, step: bool):
     new_type = "time" if step else "step"
-    session["chart_type"] = new_type
+    session["scalars"]["chart_type"] = new_type
     return (
         ChartType(session, runID), # We want to toggle it
         Charts(session, runID, swap=True)
             )
 
 def hide_line(session, runID: int, label: str):
-    if 'hidden_lines' not in session:
-        session['hidden_lines'] = []
+    if 'hidden_lines' not in session["scalars"]:
+        session["scalars"]['hidden_lines'] = []
 
-    session['hidden_lines'].append(label)
+    session["scalars"]['hidden_lines'].append(label)
     return ScalarTab(session, runID, swap=True)
 
 
 def show_line(session, runID: int, label: str):
-    if 'hidden_lines' not in session:
-        session['hidden_lines'] = []
+    if 'hidden_lines' not in session["scalars"]:
+        session["scalars"]['hidden_lines'] = []
 
-    if label in session['hidden_lines']:
-        session['hidden_lines'].remove(label)
+    if label in session["scalars"]['hidden_lines']:
+        session["scalars"]['hidden_lines'].remove(label)
 
     return ScalarTab(session, runID, swap=True)
 
 def change_smoother(session, runID: int, smoother: int):
-    session["smoother_value"] = smoother
+    session["scalars"]["smoother_value"] = smoother
     return ScalarTab(session, runID, swap=True)

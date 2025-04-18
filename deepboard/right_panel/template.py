@@ -4,6 +4,13 @@ from .scalars import ScalarTab
 from .config import ConfigView
 from .cli import CliView
 
+def reset_scalar_session(session):
+    session["scalars"] = dict(
+        hidden_lines=[],
+        smoother_value=1,
+        chart_type='step'
+    )
+
 def RightPanelContent(session, run_id: int, active_tab: str):
     if active_tab == 'scalars':
         tab_content = ScalarTab(session, run_id)

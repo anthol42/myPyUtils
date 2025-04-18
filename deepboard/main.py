@@ -4,7 +4,7 @@ from datagrid import DataGrid, build_datagrid_endpoints, SortableColumnsJs
 from datagrid import right_click_handler as right_click_handler_dg
 from utils import prepare_db
 from pyutils.resultTable import ResultTable
-from right_panel import RightPanel, build_right_panel_routes
+from right_panel import RightPanel, build_right_panel_routes, reset_scalar_session
 from fh_plotly import plotly_headers, plotly2fasthtml
 
 DATABASE = "../pyutils/results/result_table.db"
@@ -64,6 +64,7 @@ def get(session):
 # Choose a row in the datagrid
 @rt("/click_row")
 def get(session, run_id: int):
+    reset_scalar_session(session)
     # Return the image
     return DataGrid(row_selected=run_id), RightPanel(session, run_id)
 
