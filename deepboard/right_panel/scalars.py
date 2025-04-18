@@ -209,13 +209,33 @@ def ChartType(session, runID: int):
         id="chart-type-selector"
     )
 
-def Setup(session, runID: int, labels: list[tuple]):
+def Status(session, runID: int, status: Literal["running", "finished", "failed"]):
+    return Div(
+        H2("Status", cls="setup-title"),
+        Select(
+            Option("Running", value="running", selected=status == "running", cls="run-status-option running"),
+            Option("Finished", value="finished", selected=status == "finished", cls="run-status-option finished"),
+            Option("Failed", value="failed", selected=status == "failed", cls="run-status-option failed"),
+            id=f"runstatus-select",
+            name="run_status",
+            hx_get=f"/scalars/change_status?runID={runID}",
+            hx_target="#scalar-tab",
+            hx_trigger="change",
+            hx_swap="outerHTML",
+            hx_params="*",
+            cls="run-status-select" + " " + status,
+        ),
+        style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%;",
+        id="chart-type-selector"
+    )
+def Setup(session, runID: int, labels: list[tuple], status: Literal["running", "finished", "failed"]):
     return Div(
         H1("Setup", cls="chart-scalar-title"),
         Div(
             Div(
                 Smoother(session, runID),
                 ChartType(session, runID),
+                Status(session, runID, status),
                 style="width: 100%; margin-right: 1em; display: flex; flex-direction: column; align-items: flex-start",
             ),
             Legend(session, runID, labels),
@@ -224,7 +244,7 @@ def Setup(session, runID: int, labels: list[tuple]):
         cls="chart-setup",
     )
 # Components
-def Chart(session, runID: int, metric: str, type: str = "step"):
+def Chart(session, runID: int, metric: str, type: str = "step", running: bool = False):
     from __main__ import rTable
     socket = rTable.load_run(runID)
     keys = socket.formatted_scalars
@@ -245,6 +265,23 @@ def Chart(session, runID: int, metric: str, type: str = "step"):
     lines = [line for line in lines if line[0] not in hidden_lines]
     fig = make_fig(lines, type=type, smoothness=smoothness)
 
+    if running:
+        update_params = dict(
+            hx_get=f"/scalars/chart?runID={runID}&metric={metric}&type={type}&running={running}",
+            hx_target=f"#chart-container-{runID}-{metric}",
+            hx_trigger="every 10s",
+            hx_swap="outerHTML",
+        )
+    else:
+        update_params = {}
+    return Div(
+            plotly2fasthtml(fig, js_options=dict(responsive=True)),
+            cls="chart-container",
+            id=f"chart-container-{runID}-{metric}",
+            **update_params
+        )
+
+def LoadingChart(session, runID: int, metric: str, type: str, running: bool = False):
     return Div(
         Div(
             H1(metric, cls="chart-title"),
@@ -252,15 +289,17 @@ def Chart(session, runID: int, metric: str, type: str = "step"):
             id=f"chart-header-{runID}-{metric}"
         ),
         Div(
-            plotly2fasthtml(fig, js_options=dict(responsive=True)),
             cls="chart-container",
-            id=f"chart-container-{runID}-{metric}"
+            id=f"chart-container-{runID}-{metric}",
+            hx_get=f"/scalars/chart?runID={runID}&metric={metric}&type={type}&running={running}",
+            hx_target=f"#chart-container-{runID}-{metric}",
+            hx_trigger="load",
         ),
         cls="chart",
         id=f"chart-{runID}-{metric}",
     )
 
-def Charts(session, runID: int, swap: bool = False):
+def Charts(session, runID: int, swap: bool = False, status: Literal["running", "finished", "failed"] = "running"):
     from __main__ import rTable
     socket = rTable.load_run(runID)
     keys = socket.formatted_scalars
@@ -270,7 +309,7 @@ def Charts(session, runID: int, swap: bool = False):
             H1("Charts", cls="chart-scalar-title"),
         Ul(
             *[
-                Li(Chart(session, runID, metric, type=type), cls="chart-list-item")
+                Li(LoadingChart(session, runID, metric, type=type, running=status == "running"), cls="chart-list-item")
                 for metric in metrics
             ],
             cls="chart-list",
@@ -294,9 +333,10 @@ def ScalarTab(session, runID, swap: bool = False):
                   available_rep]
     # Sort lines by label
     line_names.sort(key=lambda x: x[0])
+    status = socket.status
     return Div(
-        Setup(session, runID, line_names),
-        Charts(session, runID),
+        Setup(session, runID, line_names, status),
+        Charts(session, runID, status=status),
         style="display; flex; width: 40vw; flex-direction: column; align-items: center; justify-content: center;",
         id="scalar-tab",
         hx_swap_oob="true" if swap else None,
@@ -308,6 +348,8 @@ def build_scalar_routes(rt):
     rt("/scalars/hide_line")(hide_line)
     rt("/scalars/show_line")(show_line)
     rt("/scalars/change_smoother")(change_smoother)
+    rt("/scalars/chart")(load_chart)
+    rt("/scalars/change_status")(change_status)
 
 
 # Interactive Routes
@@ -338,4 +380,13 @@ def show_line(session, runID: int, label: str):
 
 def change_smoother(session, runID: int, smoother: int):
     session["scalars"]["smoother_value"] = smoother
+    return ScalarTab(session, runID, swap=True)
+
+def load_chart(session, runID: int, metric: str, type: str, running: bool):
+    return Chart(session, runID, metric, type, running)
+
+def change_status(session, runID: int, run_status: str):
+    from __main__ import rTable
+    socket = rTable.load_run(runID)
+    socket.set_status(run_status)
     return ScalarTab(session, runID, swap=True)

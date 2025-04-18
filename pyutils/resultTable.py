@@ -182,7 +182,7 @@ class LogWriter:
             cursor.executemany(query, data)
 
         # Set the status to finished
-        self._set_status("finished")
+        self.set_status("finished")
 
         # Disable the logger
         self.enabled = False
@@ -222,12 +222,14 @@ class LogWriter:
             # If split is empty, we just return the label
             return [(row[0], row[1]) for row in rows]
 
-    def _set_status(self, status: Literal["running", "finished", "failed"]):
+    def set_status(self, status: Literal["running", "finished", "failed"]):
         """
         Set the status of the run
         :param status: The status to set
         :return: None
         """
+        if status not in ["running", "finished", "failed"]:
+            raise ValueError("Status must be one of: running, finished, failed")
         with self._cursor as cursor:
             cursor.execute("UPDATE Experiments SET status=? WHERE run_id=?", (status, self.run_id))
 
@@ -303,7 +305,7 @@ class LogWriter:
         previous_hooks = sys.excepthook
         def handler(exc_type, exc_value, traceback):
             # Set the status to failed
-            self._set_status("failed")
+            self.set_status("failed")
             # Disable the logger
             self.enabled = False
 
@@ -675,7 +677,7 @@ if __name__ == "__main__":
         "sample_inputs": False,
     }
     start = datetime.now()
-    writer = rtable.new_run("Experiment4", "results/myconfig.yml", cli=cli)
+    writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli)
     # writer = rtable.load_run(2)
     # print(writer.run_id)
     # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
