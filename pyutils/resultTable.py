@@ -7,6 +7,7 @@ from datetime import datetime, date
 import hashlib
 import shutil
 from glob import glob
+import sys
 
 def adapt_date_iso(val):
     """Adapt datetime.date to ISO 8601 date."""
@@ -77,6 +78,9 @@ class LogWriter:
         self.log_count = {}
         self.enabled = True
         self.run_rep = 0
+
+        # Set the exception handler to set the status to failed and disable the logger if the program crashes
+        self._exception_handler()
 
     def new_repetition(self):
         """
@@ -177,9 +181,24 @@ class LogWriter:
         with self._cursor as cursor:
             cursor.executemany(query, data)
 
+        # Set the status to finished
+        self._set_status("finished")
 
         # Disable the logger
         self.enabled = False
+
+    @property
+    def status(self) -> str:
+        """
+        Get the status of the run
+        :return: The status of the run
+        """
+        with self._cursor as cursor:
+            cursor.execute("SELECT status FROM Experiments WHERE run_id=?", (self.run_id,))
+            row = cursor.fetchone()
+            if row is None:
+                raise RuntimeError(f"Run {self.run_id} does not exist.")
+            return row[0]
 
     @property
     def scalars(self) -> List[str]:
@@ -202,6 +221,15 @@ class LogWriter:
             # We need to format the tags as Split/Label
             # If split is empty, we just return the label
             return [(row[0], row[1]) for row in rows]
+
+    def _set_status(self, status: Literal["running", "finished", "failed"]):
+        """
+        Set the status of the run
+        :param status: The status to set
+        :return: None
+        """
+        with self._cursor as cursor:
+            cursor.execute("UPDATE Experiments SET status=? WHERE run_id=?", (status, self.run_id))
 
     def _get_global_step(self, tag):
         """
@@ -267,6 +295,23 @@ class LogWriter:
             return True
         else:
             return False
+
+    def _exception_handler(self):
+        """
+        Set the exception handler to set the status to failed and disable the logger if the program crashes
+        """
+        previous_hooks = sys.excepthook
+        def handler(exc_type, exc_value, traceback):
+            # Set the status to failed
+            self._set_status("failed")
+            # Disable the logger
+            self.enabled = False
+
+            # Call the previous exception handler
+            previous_hooks(exc_type, exc_value, traceback)
+
+        # Set the new exception handler
+        sys.excepthook = handler
 
     @property
     def _cursor(self):
@@ -338,17 +383,29 @@ class ResultTable:
             """, (experiment_name, config_str, config_hash, cli, comment))
             res = cursor.fetchone()
             if res is not None:
+                status = res[7]
                 run_id = res[0]
-                raise RuntimeError(f"Configuration has already been run with runID {run_id}. Consider changing "
-                                   f"parameter to avoid duplicate runs or add a comment.")
-            # Insert the new row inside Experiments, then retrieve the runID
-            cursor.execute("""
-                            INSERT INTO Experiments (experiment, config, config_hash, cli, comment, start) 
-                            VALUES (?, ?, ?, ?, ?, ?);
-                        """, (experiment_name, config_str, config_hash, cli, comment, start))
+                if status != "failed":
+                    raise RuntimeError(f"Configuration has already been run with runID {run_id}. Consider changing "
+                                       f"parameter to avoid duplicate runs or add a comment.")
 
-            # Retrieve the run_id assigned by SQLite
-            run_id = cursor.lastrowid
+                # If here, the run does exist, but failed. So we will retry it
+                self.delete_run(run_id)
+
+                # Create a new one with the same run_id
+                cursor.execute("""
+                                            INSERT INTO Experiments (run_id, experiment, config, config_hash, cli, comment, start) 
+                                            VALUES (?, ?, ?, ?, ?, ?, ?);
+                                        """, (run_id, experiment_name, config_str, config_hash, cli, comment, start))
+            else:
+                # Insert the new row inside Experiments, then retrieve the runID
+                cursor.execute("""
+                                INSERT INTO Experiments (experiment, config, config_hash, cli, comment, start) 
+                                VALUES (?, ?, ?, ?, ?, ?);
+                            """, (experiment_name, config_str, config_hash, cli, comment, start))
+
+                # Retrieve the run_id assigned by SQLite
+                run_id = cursor.lastrowid
 
         if not isinstance(config_path, PurePath):
             config_path = PurePath(config_path)
@@ -358,6 +415,18 @@ class ResultTable:
         shutil.copy(config_path, self.configs_path / f'{run_id}.{extension}')
 
         return LogWriter(self.db_path, run_id, datetime.now(), flush_each=flush_each, keep_each=keep_each)
+
+    def delete_run(self, run_id: int):
+        """
+        Delete the run with the given run_id from the database.
+        """
+        with self.cursor as cursor:
+            # Delete the failed run and replace it with the new one
+            cursor.execute("DELETE FROM Experiments WHERE run_id=?", (run_id,))
+            # Delete logs
+            cursor.execute("DELETE FROM Logs WHERE run_id=?", (run_id,))
+            # Delete results
+            cursor.execute("DELETE FROM Results WHERE run_id=?", (run_id,))
 
     def fetch_all_experiments(self):
         with self.cursor as cursor:
@@ -524,6 +593,7 @@ class ResultTable:
             cli varchar(256),
             comment TEXT,
             start DATETIME NOT NULL,
+            status TEXT CHECK(status IN ('running', 'finished', 'failed')) DEFAULT 'running',
             UNIQUE(experiment, config, config_hash, cli, comment)
         );
         """)
@@ -602,11 +672,11 @@ if __name__ == "__main__":
     rtable = ResultTable()
     cli = {
         "fract": 1.,
-        "sample_inputs": True,
+        "sample_inputs": False,
     }
     start = datetime.now()
     writer = rtable.new_run("Experiment4", "results/myconfig.yml", cli=cli)
-    # writer = rtable.load_run(1)
+    # writer = rtable.load_run(2)
     # print(writer.run_id)
     # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
     # train_step = [s.value for s in writer.read_scalar("Train/acc")]
@@ -617,14 +687,14 @@ if __name__ == "__main__":
             writer.new_repetition()
         for e in range(10):
             for i in range(100):
-                writer.add_scalar("Train/acc", np.sqrt(i / 10) / 3.2, epoch=e)
-                writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 3.5, epoch=e)
-                writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.5, epoch=e)
+                writer.add_scalar("Train/acc", np.sqrt(i / 10) / 3.5, epoch=e)
+                writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 3.7, epoch=e)
+                writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.4, epoch=e)
                 writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 3.8, epoch=e)
                 time.sleep(0.05)
                 print(rep, e, i)
 
-    writer.write_result(loss=0.37, accuracy=0.96, f1=0.95)
+    writer.write_result(loss=0.37, accuracy=0.95, f1=0.93)
     columns, col_ids, data = rtable.get_results()
     print(columns)
     for row in data:
