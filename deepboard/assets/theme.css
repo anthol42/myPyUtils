@@ -21,21 +21,13 @@ table {
   width: 50%;
   border-collapse: collapse;
   background-color: #1e1e1e;
-  border: 1px solid #333;
+
   border-radius: 8px;
-  overflow: hidden;
 }
 
 td {
   padding: 1em;
   text-align: left;
-}
-th {
-  background-color: #2a2a2a;
-  color: #ccc;
-  border-bottom: 1px solid #444;
-  position: relative;
-  padding: 0;
 }
 
 tr:nth-child(even) {
@@ -44,9 +36,48 @@ tr:nth-child(even) {
 
 td {
   border-bottom: 1px solid #333;
+  white-space: nowrap;
+}
+
+/* Sticky header */
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: #2a2a2a;
+  color: #ccc;
+  border-bottom: 1px solid #333;
+}
+thead th div {
+  background-color: inherit;
+  padding: 1em; /* or whatever spacing you want */
+}
+
+/* Sticky first column */
+tbody td:first-child,
+thead th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: #2a2a2a;
+}
+
+/* Make sure the header cell in the top-left corner stays above others */
+thead th:first-child {
+  z-index: 3;
+}
+
+.scroll-container {
+  max-width: 100%;
+  max-height: 60vh; /* adjust as needed */
+  max-width: 50vw;
+  overflow: auto;
+  position: relative;
+  border-radius: 8px;
 }
 
 .sortable {
+  background-color: inherit;
   display: flex;
   align-items: center;
   justify-content: left;

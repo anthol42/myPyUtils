@@ -81,25 +81,28 @@ def DataGrid(session, rename_col: str = None, row_selected: int = None):
 
     run_ids = [row[col_ids.index("run_id")] for row in data]
     return Div(
-        Table(
-            # We put the headers in a form so that we can sort them using htmx
-            Thead(
-                Tr(
-                    *[
-                        HeaderRename(col_name, col_id) if col_id == rename_col else Header(
-                            col_name,
-                            col_id,
-                            sort_order if col_id == sort_by else None)
-                        for col_name, col_id in zip(columns, col_ids)],
-                    id="column-header-row"
-                )
+        Div(
+            Table(
+                # We put the headers in a form so that we can sort them using htmx
+                Thead(
+                    Tr(
+                        *[
+                            HeaderRename(col_name, col_id) if col_id == rename_col else Header(
+                                col_name,
+                                col_id,
+                                sort_order if col_id == sort_by else None)
+                            for col_name, col_id in zip(columns, col_ids)],
+                        id="column-header-row"
+                    )
+                    ),
+                Tbody(
+                    *[Row(row, run_id, selected=run_id == row_selected) for row, run_id in zip(data, run_ids)],
                 ),
-            Tbody(
-                *[Row(row, run_id, selected=run_id == row_selected) for row, run_id in zip(data, run_ids)],
             ),
+            cls="scroll-container"
         ),
+        cls="table-container",
         id="experiment-table",
-        cls="table-container"
     ),
 
 
