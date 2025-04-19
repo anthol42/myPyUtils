@@ -731,7 +731,7 @@ class ResultTable:
 
 
 if __name__ == "__main__":
-    print(get_diff())
+    print(len(get_diff()))
     # import numpy as np
     # rtable = ResultTable()
     # cli = {
