@@ -592,15 +592,15 @@ class ResultTable:
         exp_info = {}
         with self.cursor as cursor:
             if run_id is None:
-                cursor.execute("SELECT E.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, R.metric, R.value "
+                cursor.execute("SELECT E.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, E.status, E.commit_hash, E.diff, R.metric, R.value "
                                "FROM Experiments E LEFT JOIN Results R ON E.run_id = R.run_id")
             else:
-                cursor.execute("SELECT E.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, R.metric, R.value "
+                cursor.execute("SELECT E.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, E.status, E.commit_hash, E.diff, R.metric, R.value "
                                "FROM Experiments E LEFT JOIN Results R ON E.run_id = R.run_id WHERE E.run_id=?", (run_id, ))
             rows = cursor.fetchall()
 
         for row in rows:
-            run_id, metric, value = row[0], row[7], row[8]
+            run_id, metric, value = row[0], row[-2], row[-1]
             if run_id not in out:  # Run id already stored
                 out[run_id] = {}
                 exp_info[run_id] = dict(
@@ -610,7 +610,10 @@ class ResultTable:
                     config_hash=row[3],
                     cli=row[4],
                     comment=row[5],
-                    start=datetime.fromisoformat(row[6])
+                    start=datetime.fromisoformat(row[6]),
+                    status=row[7],
+                    commit_hash=row[8],
+                    diff=row[9],
                 )
             out[run_id][metric] = value
 
@@ -624,8 +627,6 @@ class ResultTable:
         columns.sort(key=lambda x: x[1])
 
         table = [[row.get(col[0]) for col in columns] for key, row in exp_info.items()]
-        print([col[2] for col in columns])
-        print(table)
         return [col[2] for col in columns], [col[0] for col in columns], table
 
     @property
@@ -718,11 +719,11 @@ class ResultTable:
         ('experiment', 1, 'Experiment'),
         ('config', 2, 'Config'),
         ('config_hash', NULL, 'Config Hash'),
-        ('cli', 3, 'Cli'),
+        ('cli', NULL, 'Cli'),
         ('comment', 4, 'Comment'),
-        ('start', 5, 'Start'),
-        ('status', 6, 'Status'),
-        ('commit_hash', NULL, 'Commit Hash'),
+        ('start', NULL, 'Start'),
+        ('status', NULL, 'Status'),
+        ('commit_hash', NULL, 'Commit'),
         ('diff', NULL, 'Diff');
         """)
 
