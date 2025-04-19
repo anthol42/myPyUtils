@@ -10,6 +10,7 @@ from glob import glob
 import sys
 import subprocess
 from enum import Enum
+import warnings
 
 def adapt_date_iso(val):
     """Adapt datetime.date to ISO 8601 date."""
@@ -407,6 +408,7 @@ class ResultTable:
         logwriter = LogWriter(self.db_path, run_id, datetime.now())
         logwriter.enabled = False  # We cannot log with a used writer
         return logwriter
+
     def new_run(self, experiment_name: str,
                 config_path: Union[str, PurePath],
                 cli: dict,
@@ -426,6 +428,15 @@ class ResultTable:
         log. 1 means we save at every steps. 10 would mean that we drop 9 steps to save 1.
         :return: The log writer
         """
+        diff = get_diff()
+        if diff is not None and len(diff) > 0:
+            if self.nocommit_action == NoCommitAction.RAISE:
+                raise RuntimeError("You have uncommitted changes. Please commit your changes before running the experiment in prod mode.")
+            elif self.nocommit_action == NoCommitAction.WARN:
+                warnings.warn("You have uncommitted changes. Please commit your changes before running the experiment in prod mode.", RuntimeWarning)
+
+        commit = get_last_commit()
+
         start = datetime.now()
         config_str = str(config_path)
         config_hash = self.get_file_hash(config_path)
@@ -454,15 +465,15 @@ class ResultTable:
 
                 # Create a new one with the same run_id
                 cursor.execute("""
-                                            INSERT INTO Experiments (run_id, experiment, config, config_hash, cli, comment, start) 
-                                            VALUES (?, ?, ?, ?, ?, ?, ?);
-                                        """, (run_id, experiment_name, config_str, config_hash, cli, comment, start))
+                                            INSERT INTO Experiments (run_id, experiment, config, config_hash, cli, comment, start, commit, diff) 
+                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                                        """, (run_id, experiment_name, config_str, config_hash, cli, comment, start, commit, diff))
             else:
                 # Insert the new row inside Experiments, then retrieve the runID
                 cursor.execute("""
-                                INSERT INTO Experiments (experiment, config, config_hash, cli, comment, start) 
-                                VALUES (?, ?, ?, ?, ?, ?);
-                            """, (experiment_name, config_str, config_hash, cli, comment, start))
+                                INSERT INTO Experiments (experiment, config, config_hash, cli, comment, start, commit, diff) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                            """, (experiment_name, config_str, config_hash, cli, comment, start, commit, diff))
 
                 # Retrieve the run_id assigned by SQLite
                 run_id = cursor.lastrowid
@@ -731,37 +742,36 @@ class ResultTable:
 
 
 if __name__ == "__main__":
-    print(len(get_diff()))
-    # import numpy as np
-    # rtable = ResultTable()
-    # cli = {
-    #     "fract": 0.25,
-    #     "sample_inputs": False,
-    #     "dataset": "Pâques",
-    # }
-    # start = datetime.now()
-    # writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli, comment="Test 3")
-    # writer.add_hparams(**cli)
-    # # writer = rtable.load_run(2)
-    # # print(writer.run_id)
-    # # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
-    # # train_step = [s.value for s in writer.read_scalar("Train/acc")]
-    # # print(train_step)
-    # # print(val_step)
-    # for rep in range(3):
-    #     if rep > 0:
-    #         writer.new_repetition()
-    #     for e in range(10):
-    #         for i in range(100):
-    #             writer.add_scalar("Train/acc", np.sqrt(i / 10) / 3.5, epoch=e)
-    #             writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 3.7, epoch=e)
-    #             writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.4, epoch=e)
-    #             writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 3.8, epoch=e)
-    #             time.sleep(0.05)
-    #             print(rep, e, i)
-    #
-    # writer.write_result(loss=0.37, accuracy=0.9125, f1=0.9125)
-    # columns, col_ids, data = rtable.get_results()
-    # print(columns)
-    # for row in data:
-    #     print(row)
+    import numpy as np
+    rtable = ResultTable()
+    cli = {
+        "fract": 0.25,
+        "sample_inputs": False,
+        "dataset": "Pâques",
+    }
+    start = datetime.now()
+    writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli, comment="Test 4")
+    writer.add_hparams(**cli)
+    # writer = rtable.load_run(2)
+    # print(writer.run_id)
+    # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
+    # train_step = [s.value for s in writer.read_scalar("Train/acc")]
+    # print(train_step)
+    # print(val_step)
+    for rep in range(3):
+        if rep > 0:
+            writer.new_repetition()
+        for e in range(10):
+            for i in range(100):
+                writer.add_scalar("Train/acc", np.sqrt(i / 10) / 3.5, epoch=e)
+                writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 3.7, epoch=e)
+                writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.4, epoch=e)
+                writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 3.8, epoch=e)
+                time.sleep(0.05)
+                print(rep, e, i)
+
+    writer.write_result(loss=0.37, accuracy=0.9125, f1=0.9125)
+    columns, col_ids, data = rtable.get_results()
+    print(columns)
+    for row in data:
+        print(row)
