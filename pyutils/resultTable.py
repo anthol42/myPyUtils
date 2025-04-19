@@ -8,6 +8,8 @@ import hashlib
 import shutil
 from glob import glob
 import sys
+import subprocess
+from enum import Enum
 
 def adapt_date_iso(val):
     """Adapt datetime.date to ISO 8601 date."""
@@ -31,6 +33,29 @@ def convert_datetime(val):
 sqlite3.register_converter("date", convert_date)
 sqlite3.register_converter("datetime", convert_datetime)
 
+def get_last_commit() -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError:
+        return None
+
+def get_diff() -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["git", "diff", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError:
+        return None
 class Cursor:
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -342,8 +367,17 @@ class LogWriter:
     def _cursor(self):
         return Cursor(self.db_path)
 
+class NoCommitAction(Enum):
+    NOP = "NOP" # No action
+    WARN = "WARN" # Warn the user
+    RAISE = "RAISE" # Raise an exception
 class ResultTable:
-    def __init__(self, db_path: str = "results/result_table.db"):
+    def __init__(self, db_path: str = "results/result_table.db", nocommit_action: NoCommitAction = NoCommitAction.WARN):
+        """
+
+        :param db_path: The path to the databse file
+        :param nocommit_action: What to do if changes are not committed
+        """
         if not os.path.exists(db_path):
             self.create_database(db_path)
         db_path = PurePath(db_path) if not isinstance(db_path, PurePath) else db_path
@@ -354,6 +388,7 @@ class ResultTable:
             os.mkdir(self.configs_path)
 
         self.db_path = db_path
+        self.nocommit_action = nocommit_action
 
     def load_config(self, run_id: int) -> str:
         """
@@ -619,6 +654,8 @@ class ResultTable:
             comment TEXT,
             start DATETIME NOT NULL,
             status TEXT CHECK(status IN ('running', 'finished', 'failed')) DEFAULT 'running',
+            commit varchar(40),
+            diff TEXT,
             UNIQUE(experiment, config, config_hash, cli, comment)
         );
         """)
@@ -694,36 +731,37 @@ class ResultTable:
 
 
 if __name__ == "__main__":
-    import numpy as np
-    rtable = ResultTable()
-    cli = {
-        "fract": 0.25,
-        "sample_inputs": False,
-        "dataset": "Pâques",
-    }
-    start = datetime.now()
-    writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli)
-    writer.add_hparams(**cli)
-    # writer = rtable.load_run(2)
-    # print(writer.run_id)
-    # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
-    # train_step = [s.value for s in writer.read_scalar("Train/acc")]
-    # print(train_step)
-    # print(val_step)
-    for rep in range(3):
-        if rep > 0:
-            writer.new_repetition()
-        for e in range(10):
-            for i in range(100):
-                writer.add_scalar("Train/acc", np.sqrt(i / 10) / 3.5, epoch=e)
-                writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 3.7, epoch=e)
-                writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.4, epoch=e)
-                writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 3.8, epoch=e)
-                time.sleep(0.05)
-                print(rep, e, i)
-
-    writer.write_result(loss=0.37, accuracy=0.92, f1=0.90)
-    columns, col_ids, data = rtable.get_results()
-    print(columns)
-    for row in data:
-        print(row)
+    print(get_diff())
+    # import numpy as np
+    # rtable = ResultTable()
+    # cli = {
+    #     "fract": 0.25,
+    #     "sample_inputs": False,
+    #     "dataset": "Pâques",
+    # }
+    # start = datetime.now()
+    # writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli, comment="Test 3")
+    # writer.add_hparams(**cli)
+    # # writer = rtable.load_run(2)
+    # # print(writer.run_id)
+    # # val_step = [s.value for s in writer.read_scalar("Valid/acc")]
+    # # train_step = [s.value for s in writer.read_scalar("Train/acc")]
+    # # print(train_step)
+    # # print(val_step)
+    # for rep in range(3):
+    #     if rep > 0:
+    #         writer.new_repetition()
+    #     for e in range(10):
+    #         for i in range(100):
+    #             writer.add_scalar("Train/acc", np.sqrt(i / 10) / 3.5, epoch=e)
+    #             writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 3.7, epoch=e)
+    #             writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.4, epoch=e)
+    #             writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 3.8, epoch=e)
+    #             time.sleep(0.05)
+    #             print(rep, e, i)
+    #
+    # writer.write_result(loss=0.37, accuracy=0.9125, f1=0.9125)
+    # columns, col_ids, data = rtable.get_results()
+    # print(columns)
+    # for row in data:
+    #     print(row)
