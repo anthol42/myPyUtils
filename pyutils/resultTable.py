@@ -436,7 +436,7 @@ class ResultTable:
                 warnings.warn("You have uncommitted changes. Please commit your changes before running the experiment in prod mode.", RuntimeWarning)
 
         commit = get_last_commit()
-
+        print(commit)
         start = datetime.now()
         config_str = str(config_path)
         config_hash = self.get_file_hash(config_path)
