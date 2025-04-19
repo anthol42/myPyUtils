@@ -465,13 +465,13 @@ class ResultTable:
 
                 # Create a new one with the same run_id
                 cursor.execute("""
-                                            INSERT INTO Experiments (run_id, experiment, config, config_hash, cli, comment, start, commit, diff) 
+                                            INSERT INTO Experiments (run_id, experiment, config, config_hash, cli, comment, start, commit_hash, diff) 
                                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
                                         """, (run_id, experiment_name, config_str, config_hash, cli, comment, start, commit, diff))
             else:
                 # Insert the new row inside Experiments, then retrieve the runID
                 cursor.execute("""
-                                INSERT INTO Experiments (experiment, config, config_hash, cli, comment, start, commit, diff) 
+                                INSERT INTO Experiments (experiment, config, config_hash, cli, comment, start, commit_hash, diff) 
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
                             """, (experiment_name, config_str, config_hash, cli, comment, start, commit, diff))
 
@@ -665,7 +665,7 @@ class ResultTable:
             comment TEXT,
             start DATETIME NOT NULL,
             status TEXT CHECK(status IN ('running', 'finished', 'failed')) DEFAULT 'running',
-            commit varchar(40),
+            commit_hash varchar(40),
             diff TEXT,
             UNIQUE(experiment, config, config_hash, cli, comment)
         );
@@ -719,7 +719,10 @@ class ResultTable:
         ('config_hash', NULL, 'Config Hash'),
         ('cli', 3, 'Cli'),
         ('comment', 4, 'Comment'),
-        ('start', 5, 'Start');
+        ('start', 5, 'Start'),
+        ('status', 6, 'Status'),
+        ('commit_hash', NULL, 'Commit Hash'),
+        ('diff', NULL, 'Diff');
         """)
 
         # Create a trigger to add a new metric to the display table
@@ -743,7 +746,7 @@ class ResultTable:
 
 if __name__ == "__main__":
     import numpy as np
-    rtable = ResultTable()
+    rtable = ResultTable(nocommit_action=NoCommitAction.RAISE)
     cli = {
         "fract": 0.25,
         "sample_inputs": False,
