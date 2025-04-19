@@ -436,7 +436,6 @@ class ResultTable:
                 warnings.warn("You have uncommitted changes. Please commit your changes before running the experiment in prod mode.", RuntimeWarning)
 
         commit = get_last_commit()
-        print(commit)
         start = datetime.now()
         config_str = str(config_path)
         config_hash = self.get_file_hash(config_path)
@@ -625,6 +624,8 @@ class ResultTable:
         columns.sort(key=lambda x: x[1])
 
         table = [[row.get(col[0]) for col in columns] for key, row in exp_info.items()]
+        print([col[2] for col in columns])
+        print(table)
         return [col[2] for col in columns], [col[0] for col in columns], table
 
     @property
