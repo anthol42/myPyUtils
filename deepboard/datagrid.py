@@ -4,7 +4,7 @@ def Header(name: str, col_id: str, sort_dir: str = None):
     if sort_dir == "asc":
         return Th(
             Div(name, Span("↑", cls='sort-icon'), hx_get=f'/sort?by={col_id}&order=desc', target_id='experiment-table',
-                hx_swap='outerHTML',
+                hx_swap='innerHTML',
                 cls='sortable',
                 id=f"grid-header-{col_id}"
                 ),
@@ -13,7 +13,7 @@ def Header(name: str, col_id: str, sort_dir: str = None):
     elif sort_dir == "desc":
         return Th(
             Div(name, Span("↓", cls='sort-icon'), hx_get=f'/sort?by={col_id}&order=', target_id='experiment-table',
-                hx_swap='outerHTML',
+                hx_swap='innerHTML',
                 cls='sortable',
                 id=f"grid-header-{col_id}"),
             data_col=col_id
@@ -21,7 +21,7 @@ def Header(name: str, col_id: str, sort_dir: str = None):
     else:
         return Th(
             Div(name, Span('⇅', cls='sort-icon'), hx_get=f'/sort?by={col_id}&order=asc', target_id='experiment-table',
-                hx_swap='outerHTML',
+                hx_swap='innerHTML',
                 cls='sortable',
                 id=f"grid-header-{col_id}"),
             data_col=col_id
@@ -35,7 +35,7 @@ def HeaderRename(name: str, col_id: str):
             name="new_name",
             hx_post=f'/rename_col?col_id={col_id}',
             hx_target='#experiment-table',
-            hx_swap='outerHTML',
+            hx_swap='innerHTML',
             id=f"grid-header-{col_id}",
             cls="rename-input"
         )
@@ -51,11 +51,11 @@ def Row(data, run_id, selected: bool):
         *[Td(format_value(value)) for value in data],
         hx_get=f"/click_row?run_id={run_id}",  # HTMX will GET this URL
         hx_target="#experiment-table",  # Target DOM element to update
-        hx_swap="outerHTML",  # Optional: how to replace content
+        hx_swap="innerHTML",  # Optional: how to replace content
         cls="table-row" if not selected else "table-row-selected",
     )
 
-def DataGrid(session, rename_col: str = None, row_selected: int = None):
+def DataGrid(session, rename_col: str = None, row_selected: int = None, wrapincontainer: bool = False):
     from __main__ import rTable
 
     if "datagrid" not in session:
@@ -80,9 +80,8 @@ def DataGrid(session, rename_col: str = None, row_selected: int = None):
         )
 
     run_ids = [row[col_ids.index("run_id")] for row in data]
-    return Div(
-        Div(
-            Table(
+
+    table = Table(
                 # We put the headers in a form so that we can sort them using htmx
                 Thead(
                     Tr(
@@ -100,11 +99,16 @@ def DataGrid(session, rename_col: str = None, row_selected: int = None):
                 ),
                 cls="data-grid"
             ),
-            cls="scroll-container"
-        ),
-        cls="table-container",
-        id="experiment-table",
-    ),
+
+    if wrapincontainer:
+        return Div(
+                table,
+                cls="scroll-container",
+                id="experiment-table",
+            ),
+    else:
+        return table
+
 
 
 def SortableColumnsJs():
@@ -133,7 +137,7 @@ def SortableColumnsJs():
                     // Send the new order to the server using htmx as a POST request
                     htmx.ajax('POST', '/reorder_columns', {
                         target: '#experiment-table',
-                        swap: 'outerHTML',
+                        swap: 'innerHTML',
                         values: {
                             order: columnOrder.join(',')
                         }
@@ -168,13 +172,13 @@ def right_click_handler(elementId: str, top: int, left: int):
     hidden_columns = [(key, alias) for key, (order, alias) in rTable.result_columns.items() if order is None]
     return Div(
         Ul(
-            Li('Hide', hx_get=f"/hide?col={clicked_col}", hx_target='#experiment-table', hx_swap="outerHTML", cls="menu-item"),
-            Li('Rename', hx_get=f'/rename_col_datagrid?col={clicked_col}', hx_target='#experiment-table', hx_swap="outerHTML", cls="menu-item"),
+            Li('Hide', hx_get=f"/hide?col={clicked_col}", hx_target='#experiment-table', hx_swap="innerHTML", cls="menu-item"),
+            Li('Rename', hx_get=f'/rename_col_datagrid?col={clicked_col}', hx_target='#experiment-table', hx_swap="innerHTML", cls="menu-item"),
             Li(
                 Div(A('Add', href="#", cls="has-submenu"), Span("►"),
                     style="display: flex; flex-direction: row; justify-content: space-between;"),
                 Ul(
-                    *[Li(alias, hx_get=f"/show?col={col_name}&after={clicked_col}", hx_target='#experiment-table', hx_swap="outerHTML", cls="menu-item")
+                    *[Li(alias, hx_get=f"/show?col={col_name}&after={clicked_col}", hx_target='#experiment-table', hx_swap="innerHTML", cls="menu-item")
                       for col_name, alias in hidden_columns],
                     cls="submenu"
                 ),

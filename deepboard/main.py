@@ -44,7 +44,10 @@ def get(session):
     return (Title("Main page"),
             Div(id="custom-menu"),
             Div(
-                DataGrid(session),
+                Div(
+                    DataGrid(session, wrapincontainer=True),
+                    cls="table-container"
+                ),
                 RightPanel(session),
                 cls='container',
                 id="container",
@@ -54,11 +57,14 @@ def get(session):
 @rt("/reset")
 def get(session):
     return Div(
-                DataGrid(session),
+                Div(
+                    DataGrid(session, wrapincontainer=True),
+                    cls="table-container"
+                ),
                 RightPanel(session),
                 cls='container',
-                id = "container",
-                hx_swap_oob='outerHTML'
+                id="container",
+                hx_swap_oob="true"
             )
 
 # Choose a row in the datagrid

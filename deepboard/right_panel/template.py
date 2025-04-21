@@ -57,20 +57,18 @@ def OpenPanel(session, run_id: int, active_tab: str = 'scalars'):
     )
 
 def RightPanel(session, run_id: int = None):
-    if run_id is None:
-        placeholder_text = 'Select an item to see the content.'
-    else:
-        placeholder_text = f'Row {run_id} selected'
+    placeholder_text = 'Select an item to see the content.'
     return Div(
         Button(
             I(cls="fas fa-times"),
             hx_get="/reset",
             hx_target="#container",
+            hx_swap="outerHTML",
             cls="close-button",
         ) if run_id is not None else None,
         Div(P(placeholder_text, cls="right-panel-placeholder")) if run_id is None else OpenPanel(session, run_id),
         id='right-panel',
-        hx_swap_oob='outerHTML'
+        hx_swap_oob='true'
     ),
 
 
