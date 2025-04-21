@@ -824,7 +824,7 @@ if __name__ == "__main__":
         "dataset": "Pâques",
     }
     start = datetime.now()
-    writer = rtable.new_debug_run("Experiment2", "results/myconfig.yml", cli=cli, comment="Test 4")
+    writer = rtable.new_run("Experiment3", "results/myconfig.yml", cli=cli, comment="Test 4")
     writer.add_hparams(**cli)
     # writer = rtable.load_run(2)
     # print(writer.run_id)
