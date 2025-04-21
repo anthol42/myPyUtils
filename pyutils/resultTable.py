@@ -451,31 +451,37 @@ class ResultTable:
                       AND cli = ?
                       AND comment = ?
             """, (experiment_name, config_str, config_hash, cli, comment))
-            res = cursor.fetchone()
-            if res is not None:
-                status = res[7]
-                run_id = res[0]
-                if status != "failed":
+            result = cursor.fetchall()
+            if result is not None:
+                status = [res[7] for res in result]
+                run_id = [res[0] for res in result]
+
+                # We ignore debug runs
+                status = [status for i, status in enumerate(status) if run_id[i] != -1]
+                run_id = [runID for i, runID in enumerate(run_id) if runID != -1]
+                if len(status) == 0:
+                    # If here, only a debug run exists. So we need to create a new one
+                    run_id = None
+                    status = None
+                else:
+                    # If here, the run does exist. So we will not create a new one
+                    run_id = run_id[0]
+                    status = status[0]
+
+                if status is not None and status != "failed":
+                    # If here, the run does exist and is not failed. So we will not create a new one
                     raise RuntimeError(f"Configuration has already been run with runID {run_id}. Consider changing "
                                        f"parameter to avoid duplicate runs or add a comment.")
+                elif run_id is not None and status == "failed":
+                    # If here, the run does exist, but failed. So we will retry it
+                    self._create_run_with_id(run_id, experiment_name, config_str, config_hash, cli, comment, start, commit, diff)
 
-                # If here, the run does exist, but failed. So we will retry it
-                self.delete_run(run_id)
+                elif run_id is None:
+                    # Only a debug run exists. So we need to create a new one
+                    run_id = self._create_run(experiment_name, config_str, config_hash, cli, comment, start, commit, diff)
 
-                # Create a new one with the same run_id
-                cursor.execute("""
-                                            INSERT INTO Experiments (run_id, experiment, config, config_hash, cli, comment, start, commit_hash, diff) 
-                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-                                        """, (run_id, experiment_name, config_str, config_hash, cli, comment, start, commit, diff))
             else:
-                # Insert the new row inside Experiments, then retrieve the runID
-                cursor.execute("""
-                                INSERT INTO Experiments (experiment, config, config_hash, cli, comment, start, commit_hash, diff) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-                            """, (experiment_name, config_str, config_hash, cli, comment, start, commit, diff))
-
-                # Retrieve the run_id assigned by SQLite
-                run_id = cursor.lastrowid
+                run_id = self._create_run(experiment_name, config_str, config_hash, cli, comment, start, commit, diff)
 
         if not isinstance(config_path, PurePath):
             config_path = PurePath(config_path)
@@ -485,6 +491,48 @@ class ResultTable:
         shutil.copy(config_path, self.configs_path / f'{run_id}.{extension}')
 
         return LogWriter(self.db_path, run_id, datetime.now(), flush_each=flush_each, keep_each=keep_each)
+
+    def new_debug_run(self, experiment_name: str,
+                config_path: Union[str, PurePath],
+                cli: dict,
+                comment: Optional[str] = None,
+                flush_each: int = 10,
+                keep_each: int = 1
+                ) -> LogWriter:
+        """
+        Create a new DEBUG socket to log the results. The results will be entered in the result table, but as the runID -1.
+        This means that everytime you run the same code, it will overwrite the previous one. This is useful to avoid
+        adding too many rows to the table when testing the code or debugging.
+
+        Note:
+            It will not log the git diff or git hash
+        :param experiment_name: The name of the current experiment
+        :param config_path: The path to the configuration path
+        :param cli: The cli arguments
+        :param comment: The comment, if any
+        :param flush_each: Every how many logs does the logger save them to the database?
+        :param keep_each: If the training has a lot of steps, it might be preferable to not
+        log every step to save space and speed up the process. This parameter controls every how many step we store the
+        log. 1 means we save at every steps. 10 would mean that we drop 9 steps to save 1.
+        :return: The log writer
+        """
+
+        start = datetime.now()
+        config_str = str(config_path)
+        config_hash = self.get_file_hash(config_path)
+        comment = "" if comment is None else comment
+        cli = " ".join([f'{key}={value}' for key, value in cli.items()])
+
+        self._create_run_with_id(-1, experiment_name, config_str, config_hash, cli, comment, start, None, None)
+
+        if not isinstance(config_path, PurePath):
+            config_path = PurePath(config_path)
+        config_name = config_path.name
+
+        extension = config_name.split(".")[-1]
+        shutil.copy(config_path, self.configs_path / f'{-1}.{extension}')
+
+        return LogWriter(self.db_path, -1, datetime.now(), flush_each=flush_each, keep_each=keep_each)
 
     def delete_run(self, run_id: int):
         """
@@ -668,8 +716,7 @@ class ResultTable:
             start DATETIME NOT NULL,
             status TEXT CHECK(status IN ('running', 'finished', 'failed')) DEFAULT 'running',
             commit_hash varchar(40),
-            diff TEXT,
-            UNIQUE(experiment, config, config_hash, cli, comment)
+            diff TEXT
         );
         """)
 
@@ -745,17 +792,39 @@ class ResultTable:
         conn.commit()
         conn.close()
 
+    def _create_run_with_id(self, run_id: int, experiment_name: str, config_str: str, config_hash: str, cli: str,
+                            comment: str, start: datetime, commit: Optional[str], diff: Optional[str]):
+        self.delete_run(run_id)
+
+        with self.cursor as cursor:
+            cursor.execute("""
+                                    INSERT INTO Experiments (run_id, experiment, config, config_hash, cli, comment, start, commit_hash, diff) 
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                                    """,
+                           (run_id, experiment_name, config_str, config_hash, cli, comment, start, commit, diff))
+
+    def _create_run(self, experiment_name: str, config_str: str, config_hash: str, cli: str,
+                            comment: str, start: datetime, commit: str, diff: str):
+
+        with self.cursor as cursor:
+            cursor.execute("""
+                                    INSERT INTO Experiments (experiment, config, config_hash, cli, comment, start, commit_hash, diff) 
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                                    """,
+                           (experiment_name, config_str, config_hash, cli, comment, start, commit, diff))
+            return cursor.lastrowid
+
 
 if __name__ == "__main__":
     import numpy as np
-    rtable = ResultTable(nocommit_action=NoCommitAction.RAISE)
+    rtable = ResultTable(nocommit_action=NoCommitAction.WARN)
     cli = {
         "fract": 0.25,
         "sample_inputs": False,
         "dataset": "Pâques",
     }
     start = datetime.now()
-    writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli, comment="Test 4")
+    writer = rtable.new_debug_run("Experiment2", "results/myconfig.yml", cli=cli, comment="Test 4")
     writer.add_hparams(**cli)
     # writer = rtable.load_run(2)
     # print(writer.run_id)
@@ -775,7 +844,7 @@ if __name__ == "__main__":
                 time.sleep(0.05)
                 print(rep, e, i)
 
-    writer.write_result(loss=0.37, accuracy=0.9125, f1=0.9125)
+    writer.write_result(loss=0.37, accuracy=0.9155, f1=0.935)
     columns, col_ids, data = rtable.get_results()
     print(columns)
     for row in data:
