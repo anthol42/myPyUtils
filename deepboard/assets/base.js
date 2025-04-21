@@ -28,3 +28,15 @@
     const menu = document.getElementById('custom-menu');
     menu.style.visibility = "hidden";
   });
+
+
+function copyToClipboard(container) {
+    const text = container.querySelector('.copy-text').innerText;
+
+    navigator.clipboard.writeText(text).then(() => {
+      container.classList.add('copied');
+      setTimeout(() => {
+        container.classList.remove('copied');
+      }, 1200);
+    });
+}

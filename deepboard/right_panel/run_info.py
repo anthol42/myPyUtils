@@ -3,36 +3,86 @@ from datetime import datetime, timedelta
 from fasthtml.common import *
 from markupsafe import Markup
 
-def ConfigView(runID: int):
-    from __main__ import rTable
 
-    # Config
-    cfg_text = rTable.load_config(runID)
-    cfg_parts = cfg_text.splitlines()
-    cfg = []
-    for part in cfg_parts:
-        cfg.append(P(Markup(part), cls="config-part"))
-
-    # Cli
-    row = rTable.fetch_experiment(runID)
-    if row[4] == "":
-        lines = [P(Markup(""), cls="config-part")]
-    else:
-        cli = {keyvalue.split("=")[0]: "=".join(keyvalue.split("=")[1:]) for keyvalue in row[4].split(" ")}
-        lines = [P(Markup(f"- {key}: {value}"), cls="config-part") for key, value in cli.items()]
+def CopyToClipboard(text: str, cls):
     return Div(
-        Div(
-            H2("Configuration"),
-            Div(
-                *cfg,
-                cls="file-view",
-            )
+        Span(
+            I(cls=f'fas fa-copy copy-icon default-icon {cls}'),
+            I(cls=f'fas fa-check copy-icon check-icon {cls}'),
+            cls='copy-icon-container',
         ),
-        Div(
-            H2("Cli"),
+        Span(text, cls='copy-text' + ' ' + cls),
+        onclick='copyToClipboard(this)',
+        cls='copy-container'
+    )
+
+def Status(runID: int, status: Literal["running", "finished", "failed"], swap: bool = False):
+    swap_oob = dict(swap_oob="true") if swap else {}
+    return Select(
+            Option("Running", value="running", selected=status == "running", cls="run-status-option running"),
+            Option("Finished", value="finished", selected=status == "finished", cls="run-status-option finished"),
+            Option("Failed", value="failed", selected=status == "failed", cls="run-status-option failed"),
+            id=f"runstatus-select",
+            name="run_status",
+            hx_get=f"/runinfo/change_status?runID={runID}",
+            hx_target="#runstatus-select",
+            hx_trigger="change",
+            hx_swap="outerHTML",
+            hx_params="*",
+            **swap_oob,
+            cls="run-status-select" + " " + status,
+        )
+
+def DiffView(diff: str):
+    diff_parts = diff.splitlines()
+    dff = []
+    for part in diff_parts:
+        dff.append(P(Markup(part), cls="config-part"))
+    return Div(
+        H2("Diff"),
             Div(
-                *lines,
+                *dff,
                 cls="file-view",
             )
         )
+
+
+def InfoView(runID: int):
+    from __main__ import rTable
+    # Cli
+    row = rTable.fetch_experiment(runID)
+    # RunID, Exp name, cfg, cfg hash, cli, comment, start, status, commit, diff
+    start: datetime = datetime.fromisoformat(row[6])
+    status = row[7]
+    commit = row[8]
+    diff = row[9]
+    return Div(
+        Table(
+            Tr(
+                Td(H3("Start", cls="info-label")),
+                Td(H3(start.strftime("%Y-%m-%d %H:%M:%S"), cls="info-value")),
+            ),
+            Tr(
+                Td(H3("Status", cls="info-label")),
+                Td(Status(runID, status), cls="align-right"),
+            ),
+            Tr(
+                Td(H3("Commit", cls="info-label")),
+                Td(CopyToClipboard(commit, cls="info-value"), cls="align-right"),
+            ),
+            cls="info-table",
+        ),
+        DiffView(diff)
     )
+
+
+
+# Routes
+def build_info_routes(rt):
+    rt("/runinfo/change_status")(change_status)
+
+def change_status(session, runID: int, run_status: str):
+    from __main__ import rTable
+    socket = rTable.load_run(runID)
+    socket.set_status(run_status)
+    return Status(runID, run_status, swap=True)
