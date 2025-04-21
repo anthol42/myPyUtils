@@ -2,7 +2,6 @@ from fasthtml.common import *
 from datetime import datetime
 from .scalars import ScalarTab
 from .config import ConfigView
-from .cli import CliView
 from .hparams import HParamsView
 
 def reset_scalar_session(session):
@@ -15,8 +14,6 @@ def reset_scalar_session(session):
 def RightPanelContent(session, run_id: int, active_tab: str):
     if active_tab == 'scalars':
         tab_content = ScalarTab(session, run_id)
-    elif active_tab == 'cli':
-        tab_content = CliView(run_id)
     elif active_tab == 'config':
         tab_content = ConfigView(run_id)
     elif active_tab == 'hparams':
@@ -33,8 +30,6 @@ def RightPanelContent(session, run_id: int, active_tab: str):
                 hx_swap='outerHTML'),
             Div('Config', cls='tab active' if active_tab == 'config' else 'tab',
                 hx_get=f'/fillpanel?run_id={run_id}&tab=config', hx_target='#right-panel-content', hx_swap='outerHTML'),
-            Div('Cli', cls='tab active' if active_tab == 'cli' else 'tab',
-                hx_get=f'/fillpanel?run_id={run_id}&tab=cli', hx_target='#right-panel-content', hx_swap='outerHTML'),
             Div('HParams', cls='tab active' if active_tab == 'hparams' else 'tab',
                 hx_get=f'/fillpanel?run_id={run_id}&tab=hparams', hx_target='#right-panel-content', hx_swap='outerHTML'),
             cls='tab-menu'
