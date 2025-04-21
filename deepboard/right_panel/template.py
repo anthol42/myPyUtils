@@ -25,8 +25,10 @@ def RightPanelContent(session, run_id: int, active_tab: str):
         tab_content = Div(
             P("Invalid tab selected.", cls="error-message")
         )
+
+    run_name = "DEBUG" if run_id == -1 else run_id
     return Div(
-        H1(f"Run Id: {run_id}"),
+        H1(f"Run: {run_name}"),
         Div(
             Div('Scalars', cls='tab active' if active_tab == 'scalars' else 'tab',
                 hx_get=f'/fillpanel?run_id={run_id}&tab=scalars', hx_target='#right-panel-content',
