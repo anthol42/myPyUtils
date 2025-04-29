@@ -56,8 +56,12 @@ def OpenPanel(session, run_id: int, active_tab: str = 'scalars'):
         cls="open-right-panel"
     )
 
-def RightPanel(session, run_id: int = None):
+def RightPanel(session):
     placeholder_text = 'Select an item to see the content.'
+    if "datagrid" in session and session["datagrid"].get("selected-rows") and len(session["datagrid"]["selected-rows"]) == 1:
+        run_id = session["datagrid"]["selected-rows"][0]
+    else:
+        run_id = None
     return Div(
         Button(
             I(cls="fas fa-times"),

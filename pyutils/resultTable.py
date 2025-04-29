@@ -134,7 +134,6 @@ class LogWriter:
         :param step: The global step. If none, the one calculated is used
         :param epoch: The epoch. If None, none is saved
         :param walltime: Override the wall time with this
-        :param run_rep: When the code is run multiple time, the run_rep can be used to log multiple repetitions of the same run_id
         :return: None
         """
         if not self.enabled:
@@ -701,6 +700,7 @@ class ResultTable:
 
     @staticmethod
     def create_database(db_path):
+        print(db_path)
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
@@ -824,7 +824,7 @@ if __name__ == "__main__":
         "dataset": "Pâques",
     }
     start = datetime.now()
-    writer = rtable.new_run("Experiment3", "results/myconfig.yml", cli=cli, comment="Test 4")
+    writer = rtable.new_run("Experiment3", "results/myconfig.yml", cli=cli, comment="Test 5")
     writer.add_hparams(**cli)
     # writer = rtable.load_run(2)
     # print(writer.run_id)
@@ -837,10 +837,10 @@ if __name__ == "__main__":
             writer.new_repetition()
         for e in range(10):
             for i in range(100):
-                writer.add_scalar("Train/acc", np.sqrt(i / 10) / 3.5, epoch=e)
-                writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 3.7, epoch=e)
-                writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.4, epoch=e)
-                writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 3.8, epoch=e)
+                writer.add_scalar("Train/acc", np.sqrt(i / 10) / 4, epoch=e)
+                writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 4.1, epoch=e)
+                writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.9, epoch=e)
+                writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 4.01, epoch=e)
                 time.sleep(0.05)
                 print(rep, e, i)
 

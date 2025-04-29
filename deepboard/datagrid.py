@@ -50,17 +50,19 @@ def Row(data, run_id, selected: bool):
     return Tr(
         *[Td(format_value(value)) for value in data],
         hx_get=f"/click_row?run_id={run_id}",  # HTMX will GET this URL
+        hx_trigger="click[!event.shiftKey]",
         hx_target="#experiment-table",  # Target DOM element to update
         hx_swap="innerHTML",  # Optional: how to replace content
-        cls="table-row" if not selected else "table-row-selected",
+        cls="table-row" + " table-row-selected" if selected else "table-row",
     )
 
-def DataGrid(session, rename_col: str = None, row_selected: int = None, wrapincontainer: bool = False):
+def DataGrid(session, rename_col: str = None, wrapincontainer: bool = False):
     from __main__ import rTable
 
     if "datagrid" not in session:
         session["datagrid"] = dict()
 
+    rows_selected = session["datagrid"].get("selected-rows") or []
     sort_by: Optional[str] = session["datagrid"].get("sort_by", None)
     sort_order: Optional[str] = session["datagrid"].get("sort_order", None)
     columns, col_ids, data = rTable.get_results()
@@ -95,7 +97,7 @@ def DataGrid(session, rename_col: str = None, row_selected: int = None, wrapinco
                     )
                     ),
                 Tbody(
-                    *[Row(row, run_id, selected=run_id == row_selected) for row, run_id in zip(data, run_ids)],
+                    *[Row(row, run_id, selected=run_id in rows_selected) for row, run_id in zip(data, run_ids)],
                 ),
                 cls="data-grid"
             ),
@@ -162,6 +164,7 @@ def build_datagrid_endpoints(rt):
     rt("/rename_col", methods=["POST"])(post_rename_column)
     rt("/sort")(sort)
     rt("/reorder_columns", methods=["POST"])(reorder_columns)
+    rt("/shift_click_row")(shift_click_row) # Endpoint is called in the javascript file
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Right click menu
@@ -243,4 +246,19 @@ async def reorder_columns(session, order: str):
     order = order.split(",")
     prep_order = {col_id: i + 1 for i, col_id in enumerate(order)}
     rTable.set_column_order(prep_order)
+    return DataGrid(session)
+
+async def shift_click_row(session, run_id: int):
+    if "datagrid" not in session:
+        session["datagrid"] = dict()
+
+    session["datagrid"]["multiselection"] = True
+    if "selected-rows" not in session["datagrid"]:
+        session["datagrid"]["selected-rows"] = []
+
+    if run_id in session["datagrid"]["selected-rows"]:
+        session["datagrid"]["selected-rows"].remove(run_id)
+    else:
+        session["datagrid"]["selected-rows"].append(run_id)
+
     return DataGrid(session)

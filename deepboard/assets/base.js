@@ -40,3 +40,34 @@ function copyToClipboard(container) {
       }, 1200);
     });
 }
+
+function enableShiftClickTrigger(){
+  document.addEventListener('click', function (event) {
+    if (event.shiftKey) {
+      // Only trigger HTMX on elements that explicitly want it
+      let target = event.target.closest('[hx-trigger~="shiftclick"]');
+      if (target) {
+        htmx.trigger(target, 'shiftclick');
+      }
+    }
+  });
+}
+enableShiftClickTrigger();
+
+function shiftClickDataGrid(event){
+    const el = event.target.closest('.table-row');
+    if (!el) return; // Not one of ours
+    if (event.shiftKey) {
+      const originalUrl = el.getAttribute('hx-get'); // e.g. "/default-endpoint?runID=3"
+      const url = new URL(originalUrl, window.location.origin); // create full URL to parse
+      const params = url.search;
+
+     // Instead of modifying the attribute, trigger htmx manually with the new URL
+      htmx.ajax('GET', `/shift_click_row${params}`, {target: el.getAttribute('hx-target') || el});
+
+      // Prevent the original click handler from firing
+      event.preventDefault();
+      event.stopPropagation();
+    }
+}
+document.addEventListener('click', shiftClickDataGrid);

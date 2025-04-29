@@ -56,6 +56,7 @@ def get(session):
 
 @rt("/reset")
 def get(session):
+    session["datagrid"] = dict()
     return Div(
                 Div(
                     DataGrid(session, wrapincontainer=True),
@@ -71,8 +72,11 @@ def get(session):
 @rt("/click_row")
 def get(session, run_id: int):
     reset_scalar_session(session)
+    if "datagrid" not in session:
+        session["datagrid"] = dict()
+    session["datagrid"]["selected-rows"] = [run_id]
     # Return the image
-    return DataGrid(session, row_selected=run_id), RightPanel(session, run_id)
+    return DataGrid(session), RightPanel(session)
 
 
 # Dropdown menu when right-cliked
