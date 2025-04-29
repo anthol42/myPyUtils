@@ -55,6 +55,13 @@ def get(session):
             )
             )
 
+@rt("/compare")
+def get(session, run_ids: str):
+    run_ids = run_ids.split(",")
+    return (Title("Compare"),
+            P(run_ids)
+            )
+
 @rt("/reset")
 def get(session):
     session["datagrid"] = dict()
@@ -78,7 +85,7 @@ def get(session, run_id: int):
         session["datagrid"] = dict()
     session["datagrid"]["selected-rows"] = [run_id]
     # Return the image
-    return DataGrid(session), RightPanel(session)
+    return DataGrid(session), CompareButton(session, swap=True), RightPanel(session)
 
 
 # Dropdown menu when right-cliked
