@@ -157,6 +157,21 @@ def SortableColumnsJs():
         """
     return Script(src, type='module')
 
+
+def CompareButton(session, swap: bool = False):
+    show = "datagrid" in session and "selected-rows" in session["datagrid"] and len(session["datagrid"]["selected-rows"]) > 1
+    return Div(
+        Button(
+            "Compare",
+            cls="compare-button",
+            style="display: block;" if show else "display: none;",
+        ),
+        cls="compare-button-container",
+        id="compare-button-container",
+        hx_swap_oob="true" if swap else "false",
+    )
+
+
 def build_datagrid_endpoints(rt):
     rt("/hide")(hide_column)
     rt("/show")(show_column)
@@ -261,4 +276,4 @@ async def shift_click_row(session, run_id: int):
     else:
         session["datagrid"]["selected-rows"].append(run_id)
 
-    return DataGrid(session)
+    return DataGrid(session), CompareButton(session, swap=True)

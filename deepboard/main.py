@@ -1,6 +1,6 @@
 import sys; sys.path.append('..')
 from fasthtml.common import *
-from datagrid import DataGrid, build_datagrid_endpoints, SortableColumnsJs
+from datagrid import DataGrid, build_datagrid_endpoints, SortableColumnsJs, CompareButton
 from datagrid import right_click_handler as right_click_handler_dg
 from utils import prepare_db
 from pyutils.resultTable import ResultTable
@@ -46,6 +46,7 @@ def get(session):
             Div(
                 Div(
                     DataGrid(session, wrapincontainer=True),
+                    CompareButton(session),
                     cls="table-container"
                 ),
                 RightPanel(session),
@@ -60,6 +61,7 @@ def get(session):
     return Div(
                 Div(
                     DataGrid(session, wrapincontainer=True),
+                    CompareButton(session),
                     cls="table-container"
                 ),
                 RightPanel(session),
