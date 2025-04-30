@@ -52,11 +52,14 @@ def ChartCardList(session):
 
 
 def CompareSetup(session):
+    from __main__ import CONFIG
+    labels_text = session["compare"]["selected-rows"]
+    labels = [(label, CONFIG.COLORS[i % len(CONFIG.COLORS)], False) for i, label in enumerate(labels_text)]
     return Div(
         H1("Setup", cls="chart-scalar-title"),
-        # Legend(),
-        # ChartType(session),
-        # Smoother(session),
+        Legend(session, labels, path="/compare", session_path="compare"),
+        ChartType(session, path="/compare", session_path="compare"),
+        Smoother(session, path="/compare", session_path="compare"),
         cls="setup-card"
     )
 

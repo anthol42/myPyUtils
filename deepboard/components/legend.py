@@ -16,9 +16,9 @@ def LegendLine(session, runIDs: str, label: str, color: str, hidden: bool, path)
             hx_get=f"{path}/hide_line?runIDs={runIDs}&label={label}",
             cls="legend-line"
         )
-def Legend(session, labels: list[tuple], path: str):
-    if "datagrid" in session and "selected-rows" in session["datagrid"] and len(session["datagrid"]["selected-rows"]) > 0:
-        runIDs = session["datagrid"]["selected-rows"]
+def Legend(session, labels: list[tuple], path: str, session_path: str):
+    if session_path in session and "selected-rows" in session[session_path] and len(session[session_path]["selected-rows"]) > 0:
+        runIDs = session[session_path]["selected-rows"]
         runIDs = ','.join([str(i) for i in runIDs])
     else:
         print("Warning: no selected lines")

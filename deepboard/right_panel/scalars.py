@@ -135,11 +135,11 @@ def Setup(session, labels: list[tuple]):
         H1("Setup", cls="chart-scalar-title"),
         Div(
             Div(
-                Smoother(session, path = "/scalars"),
-                ChartType(session, path = "/scalars"),
+                Smoother(session, path = "/scalars", session_path="datagrid"),
+                ChartType(session, path = "/scalars", session_path="datagrid"),
                 style="width: 100%; margin-right: 1em; display: flex; flex-direction: column; align-items: flex-start",
             ),
-            Legend(session, labels, path = "/scalars"),
+            Legend(session, labels, path = "/scalars", session_path="datagrid"),
             cls="chart-setup-container",
         ),
         cls="chart-setup",

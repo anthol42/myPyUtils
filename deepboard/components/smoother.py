@@ -1,8 +1,8 @@
 from fasthtml.common import *
 
-def Smoother(session, path: str):
-    if "datagrid" in session and "selected-rows" in session["datagrid"] and len(session["datagrid"]["selected-rows"]) > 0:
-        runIDs = session["datagrid"]["selected-rows"]
+def Smoother(session, path: str, session_path: str):
+    if session_path in session and "selected-rows" in session[session_path] and len(session[session_path]["selected-rows"]) > 0:
+        runIDs = session[session_path]["selected-rows"]
     else:
         print("Warning: no selected lines")
         runIDs = []

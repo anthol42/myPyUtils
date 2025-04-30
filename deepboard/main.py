@@ -90,6 +90,7 @@ def get(session):
 @rt("/compare")
 def get(session, run_ids: str):
     run_ids = run_ids.split(",")
+    session["compare"] = {"selected-rows": run_ids}
     return (Title("Compare"),
             Div(id="custom-menu"),
             Div(
