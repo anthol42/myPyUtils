@@ -1,5 +1,6 @@
 from fasthtml.common import *
 from datetime import datetime
+from deepboard.components import Legend, ChartType, Smoother
 
 
 def SplitCard(session, split: str, opened: bool = True):
@@ -53,6 +54,9 @@ def ChartCardList(session):
 def CompareSetup(session):
     return Div(
         H1("Setup", cls="chart-scalar-title"),
+        # Legend(),
+        # ChartType(session),
+        # Smoother(session),
         cls="setup-card"
     )
 
