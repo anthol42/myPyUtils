@@ -1,0 +1,86 @@
+.compare-container{
+    display: flex;
+    align-items: center;
+}
+.compare-setup-container{
+    width: 25vw;
+    height: 75vh;
+}
+.cards-list-container{
+    width: 75vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-y: scroll;
+}
+.setup-card{
+    margin-left: 2em;
+    padding: 2em;
+    height: 100%;
+    border-radius: 10px;
+    color: #ccc;
+    background-color: #2a2a2a;
+    box-shadow: 0 1px 7px 0.5px rgba(255, 255, 255, 0.2);
+}
+.comparison-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+    width: 90%;
+}
+.split-card{
+    height: 40vh;
+    margin-top: 2em;
+    margin-bottom: 2em;
+    padding: 2rem;
+    border-radius: 10px;
+    color: #ccc;
+    background-color: #2a2a2a;
+    box-shadow: 0 1px 7px 0.5px rgba(255, 255, 255, 0.2);
+}
+.split-card.closed{
+    height: auto;
+}
+.split-card-header{
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 2em;
+}
+
+.split-card-title{
+    font-family: system-ui, sans-serif;
+    color: #fff;
+    font-size: 2rem;
+    margin-left: 0.5rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.two-charts-container {
+
+}
+.accordion-toggle {
+  background-color: rgba(0, 0, 0, 0);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.5em;
+  color: #ccc;
+}
+
+.accordion-toggle:hover {
+  color: #4d4d4d;
+}
+
+.accordion-toggle.rotated i {
+  transform: rotate(270deg);
+  transition: transform 0.3s ease;
+}

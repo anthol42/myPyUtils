@@ -4,34 +4,7 @@ from typing import *
 from datetime import datetime, timedelta
 from fasthtml.common import *
 from fh_plotly import plotly2fasthtml
-
-COLORS = [
-    "#1f77b4",  # muted blue
-    "#ff7f0e",  # vivid orange
-    "#2ca02c",  # medium green
-    "#d62728",  # brick red
-    "#9467bd",  # muted purple
-    "#8c564b",  # brownish pink
-    "#e377c2",  # pink
-    "#7f7f7f",  # gray
-    "#bcbd22",  # lime yellow
-    "#17becf",  # cyan
-]
-HIDDEN_COLOR = "#333333"  # gray for hidden lines
-
-PLOTLY_THEME = dict(
-        plot_bgcolor='#111111',     # dark background for the plotting area
-        paper_bgcolor='#111111',    # dark background for the full figure
-        font=dict(color='white'),   # white text everywhere (axes, legend, etc.)
-        xaxis=dict(
-            gridcolor='#333333',    # subtle dark grid lines
-            zerolinecolor='#333333'
-        ),
-        yaxis=dict(
-            gridcolor='#333333',
-            zerolinecolor='#333333'
-        ),
-)
+from deepboard.components import Legend, Smoother, ChartType
 
 def make_df(socket, tag) -> Tuple[pd.DataFrame, List[int], List[int]]:
     scalars = socket.read_scalar("/".join(tag))
@@ -53,6 +26,7 @@ def make_df(socket, tag) -> Tuple[pd.DataFrame, List[int], List[int]]:
     return df, available_rep, available_epochs
 
 def make_step_lines(socket, splits: set[str], metric: str, keys: set[tuple[str, str]]):
+    from __main__ import CONFIG
     lines = []
     for i, split in enumerate(splits):
         tag = (split, metric)
@@ -64,12 +38,13 @@ def make_step_lines(socket, splits: set[str], metric: str, keys: set[tuple[str, 
                     f'{split}_{rep}',
                     rep_df.index.get_level_values("step"),
                     rep_df["value"],
-                    COLORS[i % len(COLORS)],
+                    CONFIG.COLORS[i % len(CONFIG.COLORS)],
                     rep_df["epoch"].values if len(available_epochs) > 1 else None,
                 ))
     return lines
 
 def make_time_lines(socket, splits: set[str], metric: str, keys: set[tuple[str, str]]):
+    from __main__ import CONFIG
     lines = []
     for i, split in enumerate(splits):
         tag = (split, metric)
@@ -81,7 +56,7 @@ def make_time_lines(socket, splits: set[str], metric: str, keys: set[tuple[str, 
                     f'{split}_{rep}',
                     rep_df["walltime"],
                     rep_df["value"],
-                    COLORS[i % len(COLORS)],
+                    CONFIG.COLORS[i % len(CONFIG.COLORS)],
                     rep_df["epoch"].values if len(available_epochs) > 1 else None,
                 ))
     return lines
@@ -100,6 +75,7 @@ def ema(values, alpha):
     return values.ewm(alpha=alpha, adjust=False).mean()
 
 def make_fig(lines, type: str = "step", smoothness: float = 0.):
+    from __main__ import CONFIG
     fig = go.Figure()
 
     for label, steps, values, color, epochs in lines:
@@ -126,7 +102,7 @@ def make_fig(lines, type: str = "step", smoothness: float = 0.):
 
     if type == "step":
         fig.update_layout(
-            PLOTLY_THEME,
+            CONFIG.PLOTLY_THEME,
             xaxis_title="Step",
             yaxis_title="Value",
             hovermode="x unified",
@@ -138,7 +114,7 @@ def make_fig(lines, type: str = "step", smoothness: float = 0.):
         )
     elif type == "time":
         fig.update_layout(
-            PLOTLY_THEME,
+            CONFIG.PLOTLY_THEME,
             xaxis_title="Duration",
             yaxis_title="Value",
             hovermode="x unified",
@@ -154,71 +130,16 @@ def make_fig(lines, type: str = "step", smoothness: float = 0.):
     return fig
 
 
-
-def LegendLine(session, runID: int, label: str, color: str, hidden: bool):
-    if hidden:
-        return Li(
-            Span(cls="legend-icon", style=f"background-color: {HIDDEN_COLOR};"),
-            A(label, cls="legend-label", style=f"color: {HIDDEN_COLOR};"),
-            hx_get=f"/scalars/show_line?runID={runID}&label={label}",
-            cls="legend-line"
-        )
-    else:
-        return Li(
-            Span(cls="legend-icon", style=f"background-color: {color};"),
-            A(label, cls="legend-label"),
-            hx_get=f"/scalars/hide_line?runID={runID}&label={label}",
-            cls="legend-line"
-        )
-def Legend(session, runID: int, labels: list[tuple]):
-    return Div(
-        H2("Legend", cls="chart-legend-title"),
-        Ul(
-            *[LegendLine(session, runID, label, color, hidden) for label, color, hidden in labels],
-            cls="chart-legend",
-            id=f"chart-legend-{runID}"
-        ),
-        cls="chart-toolbox",
-    )
-
-def Smoother(session, runID: int):
-    if "smoother_value" not in session["scalars"]:
-        session["scalars"]["smoother_value"] = 1
-    value = session["scalars"]["smoother_value"]
-    return Div(
-        H2("Smoother", cls="setup-title"),
-        Div(
-            P(f"{value - 1}%"),
-            Input(type="range", min=1, max=101, value=value, id=f"chart-smoother", name="smoother",
-                  hx_get=f"/scalars/change_smoother?runID={runID}", hx_trigger="change"),
-            cls="chart-smoother-container",
-        ),
-        cls="chart-toolbox",
-    )
-
-def ChartType(session, runID: int):
-    if "chart_type" not in session["scalars"]:
-        session["scalars"]["chart_type"] = "step"
-    type = session["scalars"]["chart_type"]
-    return Div(
-        H2("Step/Duration", cls="setup-title"),
-        Input(type="checkbox", name="Step chart", id=f"chart-type-step-{runID}", value="step", cls="chart-type-checkbox",
-              checked=type == "step", hx_get=f"/scalars/change_chart?runID={runID}&step={type == 'step'}",
-              hx_swap="outerHTML", hx_target="#chart-type-selector"),
-        style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%;",
-        id="chart-type-selector"
-    )
-
 def Setup(session, runID: int, labels: list[tuple], status: Literal["running", "finished", "failed"]):
     return Div(
         H1("Setup", cls="chart-scalar-title"),
         Div(
             Div(
-                Smoother(session, runID),
-                ChartType(session, runID),
+                Smoother(session, runID, path = "/scalars"),
+                ChartType(session, runID, path = "/scalars"),
                 style="width: 100%; margin-right: 1em; display: flex; flex-direction: column; align-items: flex-start",
             ),
-            Legend(session, runID, labels),
+            Legend(session, runID, labels, path = "/scalars"),
             cls="chart-setup-container",
         ),
         cls="chart-setup",
@@ -301,15 +222,15 @@ def Charts(session, runID: int, swap: bool = False, status: Literal["running", "
     return out
 
 def ScalarTab(session, runID, swap: bool = False):
-    if 'hidden_lines' not in session:
+    from __main__ import CONFIG, rTable
+    if 'hidden_lines' not in session["scalars"]:
         session["scalars"]['hidden_lines'] = []
-    from __main__ import rTable
     socket = rTable.load_run(runID)
     keys = socket.formatted_scalars
     splits = {split for split, label in keys}
     # Get repetitions
     available_rep = socket.get_repetitions()
-    line_names = [(f'{split}_{rep}', COLORS[i % len(COLORS)], f'{split}_{rep}' in session["scalars"]['hidden_lines']) for i, split in enumerate(splits) for rep in
+    line_names = [(f'{split}_{rep}', CONFIG.COLORS[i % len(CONFIG.COLORS)], f'{split}_{rep}' in session["scalars"]['hidden_lines']) for i, split in enumerate(splits) for rep in
                   available_rep]
     # Sort lines by label
     line_names.sort(key=lambda x: x[0])
@@ -336,7 +257,7 @@ def change_chart_type(session, runID: int, step: bool):
     new_type = "time" if step else "step"
     session["scalars"]["chart_type"] = new_type
     return (
-        ChartType(session, runID), # We want to toggle it
+        ChartType(session, runID, path="/scalars"), # We want to toggle it
         Charts(session, runID, swap=True)
             )
 
