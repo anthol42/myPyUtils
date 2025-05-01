@@ -67,6 +67,9 @@ def SplitCard(session, split: str, metrics: List[str], opened: bool = True):
     from __main__ import rTable
     runIDs = sorted([int(rid) for rid in session["compare"]["selected-rows"]])
     sockets = [rTable.load_run(runID) for runID in runIDs]
+    running = any([socket.status == "running" for socket in sockets])
+    metrics = sorted(metrics)
+    chart_type = session["compare"]["chart_type"] if "chart_type" in session["compare"] else "step"
     if opened:
         return Li(
             Div(
@@ -81,8 +84,7 @@ def SplitCard(session, split: str, metrics: List[str], opened: bool = True):
                 cls="split-card-header"
             ),
             Div(
-                Chart(session, split, "acc", type="step", running=False),
-                Chart(session, split, "f1", type="step", running=False),
+                *[Chart(session, split, metric, type=chart_type, running=running) for metric in metrics],
                 cls="multi-charts-container"
             ),
             cls="split-card",
@@ -106,7 +108,7 @@ def SplitCard(session, split: str, metrics: List[str], opened: bool = True):
             id=f"split-card-{split}",
         )
 
-def ChartCardList(session):
+def ChartCardList(session, swap: bool = False):
     runIDs = sorted([int(rid) for rid in session["compare"]["selected-rows"]])
     from __main__ import rTable
     sockets = [rTable.load_run(runID) for runID in runIDs]
@@ -117,7 +119,9 @@ def ChartCardList(session):
 
     return Ul(
                 *[SplitCard(session, split, metrics[split]) for split in splits],
-                cls="comparison-list"
+                cls="comparison-list",
+                id="chart-card-list",
+                hx_swap_oob="true" if swap else None
             )
 
 
@@ -163,13 +167,15 @@ def toggle_accordion(session, split: str, metrics: str, open: bool):
 def change_chart_type(session, runIDs: str, step: bool):
     new_type = "time" if step else "step"
     session["compare"]["chart_type"] = new_type
-    return ChartType(session, path="/compare", session_path="compare", selected_rows_key="compare") # We want to toggle it
+    return (ChartType(session, path="/compare", session_path="compare", selected_rows_key="compare"), # We want to toggle it
+            ChartCardList(session, swap=True)
+    )
 
 def hide_line(session, runIDs: str, label: str):
     if 'hidden_lines' not in session["compare"]:
         session["compare"]['hidden_lines'] = []
     session["compare"]['hidden_lines'].append(label)
-    return CompareSetup(session, swap=True)
+    return CompareSetup(session, swap=True), ChartCardList(session, swap=True)
 
 
 def show_line(session, runIDs: str, label: str):
@@ -178,8 +184,8 @@ def show_line(session, runIDs: str, label: str):
     if label in session["compare"]['hidden_lines']:
         session["compare"]['hidden_lines'].remove(label)
 
-    return CompareSetup(session, swap=True)
+    return CompareSetup(session, swap=True), ChartCardList(session, swap=True)
 
 def change_smoother(session, runIDs: str, smoother: int):
     session["compare"]["smoother_value"] = smoother
-    return CompareSetup(session, swap=True)
+    return CompareSetup(session, swap=True), ChartCardList(session, swap=True)
