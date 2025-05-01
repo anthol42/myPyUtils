@@ -135,11 +135,11 @@ def Setup(session, labels: list[tuple]):
         H1("Setup", cls="chart-scalar-title"),
         Div(
             Div(
-                Smoother(session, path = "/scalars", session_path="datagrid"),
-                ChartType(session, path = "/scalars", session_path="datagrid"),
+                Smoother(session, path = "/scalars", selected_rows_key="datagrid", session_path="scalars"),
+                ChartType(session, path = "/scalars", selected_rows_key="datagrid", session_path="scalars"),
                 style="width: 100%; margin-right: 1em; display: flex; flex-direction: column; align-items: flex-start",
             ),
-            Legend(session, labels, path = "/scalars", session_path="datagrid"),
+            Legend(session, labels, path = "/scalars", selected_rows_key="datagrid"),
             cls="chart-setup-container",
         ),
         cls="chart-setup",
@@ -259,7 +259,7 @@ def change_chart_type(session, runIDs: str, step: bool):
     runIds = runIDs.split(",")
     runID = runIds[0]
     return (
-        ChartType(session, path="/scalars"), # We want to toggle it
+        ChartType(session, path="/scalars", selected_rows_key="datagrid", session_path="scalars"), # We want to toggle it
         Charts(session, int(runID), swap=True)
             )
 

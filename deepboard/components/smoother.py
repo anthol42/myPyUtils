@@ -1,14 +1,14 @@
 from fasthtml.common import *
 
-def Smoother(session, path: str, session_path: str):
-    if session_path in session and "selected-rows" in session[session_path] and len(session[session_path]["selected-rows"]) > 0:
-        runIDs = session[session_path]["selected-rows"]
+def Smoother(session, path: str, selected_rows_key: str, session_path: str):
+    if selected_rows_key in session and "selected-rows" in session[selected_rows_key] and len(session[selected_rows_key]["selected-rows"]) > 0:
+        runIDs = session[selected_rows_key]["selected-rows"]
     else:
         print("Warning: no selected lines")
         runIDs = []
-    if "smoother_value" not in session["scalars"]:
-        session["scalars"]["smoother_value"] = 1
-    value = session["scalars"]["smoother_value"]
+    if "smoother_value" not in session[session_path]:
+        session[session_path]["smoother_value"] = 1
+    value = session[session_path]["smoother_value"]
     return Div(
         H2("Smoother", cls="setup-title"),
         Div(
