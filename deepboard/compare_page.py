@@ -63,13 +63,15 @@ def Chart(session, split: str, metric: str, type: Literal["step", "duration"], r
         id = f"chart-{split}-{metric}",
     )
 
-def SplitCard(session, split: str, metrics: List[str], opened: bool = True):
+def SplitCard(session, split: str, metrics: List[str]):
     from __main__ import rTable
     runIDs = sorted([int(rid) for rid in session["compare"]["selected-rows"]])
     sockets = [rTable.load_run(runID) for runID in runIDs]
     running = any([socket.status == "running" for socket in sockets])
     metrics = sorted(metrics)
     chart_type = session["compare"]["chart_type"] if "chart_type" in session["compare"] else "step"
+
+    opened = session["compare"]["cards-state"][split] if "cards-state" in session["compare"] and split in session["compare"]["cards-state"] else True
     if opened:
         return Li(
             Div(
@@ -162,7 +164,10 @@ def build_compare_routes(rt):
 
 # Routes
 def toggle_accordion(session, split: str, metrics: str, open: bool):
-    return SplitCard(session, split, opened=open, metrics=metrics.split(","))
+    if "cards-state" not in session["compare"]:
+        session["compare"]["cards-state"] = {}
+    session["compare"]["cards-state"][split] = open
+    return SplitCard(session, split, metrics=metrics.split(","))
 
 def change_chart_type(session, runIDs: str, step: bool):
     new_type = "time" if step else "step"
