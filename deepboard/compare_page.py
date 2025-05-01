@@ -46,6 +46,14 @@ def Chart(session, split: str, metric: str, type: Literal["step", "duration"], r
         )
     else:
         update_params = {}
+    return  Div(
+            plotly2fasthtml(fig, js_options=dict(responsive=True)),
+            cls="chart-container",
+            id=f"chart-container-{split}-{metric}",
+            **update_params
+        ),
+
+def LoadingChart(session, split: str, metric: str, type: Literal["step", "duration"], running: bool = False):
     return Div(
             Div(
                 H1(metric, cls="chart-title"),
@@ -53,12 +61,12 @@ def Chart(session, split: str, metric: str, type: Literal["step", "duration"], r
                 id=f"chart-header-{split}-{metric}"
             ),
         Div(
-            plotly2fasthtml(fig, js_options=dict(responsive=True)),
             cls="chart-container",
             id=f"chart-container-{split}-{metric}",
-            **update_params
+            hx_get=f"/compare/chart?split={split}&metric={metric}&type={type}&running={running}",
+            hx_target=f"#chart-container-{split}-{metric}",
+            hx_trigger="load",
         ),
-        # style={"width": "45%"},
         cls = "chart",
         id = f"chart-{split}-{metric}",
     )
@@ -86,7 +94,7 @@ def SplitCard(session, split: str, metrics: List[str]):
                 cls="split-card-header"
             ),
             Div(
-                *[Chart(session, split, metric, type=chart_type, running=running) for metric in metrics],
+                *[LoadingChart(session, split, metric, type=chart_type, running=running) for metric in metrics],
                 cls="multi-charts-container"
             ),
             cls="split-card",
@@ -161,6 +169,7 @@ def build_compare_routes(rt):
     rt("/compare/hide_line")(hide_line)
     rt("/compare/show_line")(show_line)
     rt("/compare/change_smoother")(change_smoother)
+    rt("/compare/chart")(load_chart)
 
 # Routes
 def toggle_accordion(session, split: str, metrics: str, open: bool):
@@ -194,3 +203,6 @@ def show_line(session, runIDs: str, label: str):
 def change_smoother(session, runIDs: str, smoother: int):
     session["compare"]["smoother_value"] = smoother
     return CompareSetup(session, swap=True), ChartCardList(session, swap=True)
+
+def load_chart(session, split: str, metric: str, type: str, running: bool):
+    return Chart(session, split, metric, type, running)
