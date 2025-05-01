@@ -545,6 +545,20 @@ class ResultTable:
             # Delete results
             cursor.execute("DELETE FROM Results WHERE run_id=?", (run_id,))
 
+    def hide_run(self, run_id: int):
+        with self.cursor as cursor:
+            cursor.execute("UPDATE Experiments SET hidden=1 WHERE run_id=?", (run_id,))
+
+    def show_run(self, run_id: int):
+        with self.cursor as cursor:
+            cursor.execute("UPDATE Experiments SET hidden=0 WHERE run_id=?", (run_id,))
+
+    def get_hidden_runs(self):
+        with self.cursor as cursor:
+            cursor.execute("SELECT run_id FROM Experiments WHERE hidden>0")
+            runs = cursor.fetchall()
+            return [r[0] for r in runs]
+
     def fetch_all_experiments(self):
         with self.cursor as cursor:
             cursor.execute("SELECT * FROM Experiments")
@@ -629,7 +643,7 @@ class ResultTable:
             # Insert the column
             cursor.execute("UPDATE ResultDisplay SET display_order=? WHERE Name=?", (order, column))
 
-    def get_results(self, run_id: Optional[int] = None) -> Tuple[List[str], List[str], List[List[Any]]]:
+    def get_results(self, run_id: Optional[int] = None, show_hidden: bool = False) -> Tuple[List[str], List[str], List[List[Any]]]:
         """
         Get the result table as a dict
         :param run_id: the run id. If none is specified, it fetches all results
@@ -638,12 +652,16 @@ class ResultTable:
         out = {}
         exp_info = {}
         with self.cursor as cursor:
-            if run_id is None:
-                cursor.execute("SELECT E.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, E.status, E.commit_hash, E.diff, R.metric, R.value "
-                               "FROM Experiments E LEFT JOIN Results R ON E.run_id = R.run_id")
-            else:
-                cursor.execute("SELECT E.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, E.status, E.commit_hash, E.diff, R.metric, R.value "
-                               "FROM Experiments E LEFT JOIN Results R ON E.run_id = R.run_id WHERE E.run_id=?", (run_id, ))
+            command = "SELECT E.run_id, E.experiment, E.config, E.config_hash, E.cli, E.comment, E.start, E.status, E.commit_hash, E.diff, E.hidden, R.metric, R.value " \
+                        "FROM Experiments E LEFT JOIN Results R ON E.run_id = R.run_id"
+            params = []
+            if run_id is not None:
+                command += " WHERE E.run_id = ?"
+                params.append(run_id)
+            if not show_hidden:
+                command += " WHERE E.hidden = 0"
+
+            cursor.execute(command, params)
             rows = cursor.fetchall()
 
         for row in rows:
@@ -661,6 +679,7 @@ class ResultTable:
                     status=row[7],
                     commit_hash=row[8],
                     diff=row[9],
+                    hidden=row[10]
                 )
             out[run_id][metric] = value
 
@@ -716,7 +735,8 @@ class ResultTable:
             start DATETIME NOT NULL,
             status TEXT CHECK(status IN ('running', 'finished', 'failed')) DEFAULT 'running',
             commit_hash varchar(40),
-            diff TEXT
+            diff TEXT,
+            hidden INTEGER NOT NULL DEFAULT 0
         );
         """)
 
@@ -771,7 +791,8 @@ class ResultTable:
         ('start', NULL, 'Start'),
         ('status', NULL, 'Status'),
         ('commit_hash', NULL, 'Commit'),
-        ('diff', NULL, 'Diff');
+        ('diff', NULL, 'Diff'),
+        ('hidden', NULL, 'Hidden');
         """)
 
         # Create a trigger to add a new metric to the display table
@@ -851,3 +872,5 @@ if __name__ == "__main__":
     print(columns)
     for row in data:
         print(row)
+
+    print(rtable.get_hidden_runs())
