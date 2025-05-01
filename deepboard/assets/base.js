@@ -1,12 +1,16 @@
   window.addEventListener("contextmenu", function(e) {
-  console.log("Context menu event triggered");
-    e.preventDefault(); // Prevent the default browser context menu
-
     // Get the target element (the element that was clicked)
-    const targetElement = e.target;
+    let element = e.target;
 
-    // Log or use the target element's ID or any other property you want
-    console.log("Right-clicked element ID:", targetElement.id);
+    e.preventDefault(); // Prevent the default browser context menu
+    const ids = [];
+
+      while (element) {
+          if (element.id) {
+              ids.push(element.id);
+          }
+          element = element.parentElement;
+      }
 
     // You can pass this information to your HTMX request
     const menu = document.getElementById('custom-menu');
@@ -14,7 +18,9 @@
     menu.style.left = `${e.clientX}px`;
 
     // Trigger HTMX request to load the menu content
-    htmx.ajax('GET', `/get-context-menu?elementId=${targetElement.id}&top=${e.clientY}&left=${e.clientX}`, {
+    // Join ids with ,
+    str_ids = ids.join(",")
+    htmx.ajax('GET', `/get-context-menu?elementIds=${str_ids}&top=${e.clientY}&left=${e.clientX}`, {
       target: '#custom-menu',
       swap: 'outerHTML',  // Correct usage of swap attribute
       headers: {
@@ -41,18 +47,18 @@ function copyToClipboard(container) {
     });
 }
 
-function enableShiftClickTrigger(){
-  document.addEventListener('click', function (event) {
-    if (event.shiftKey) {
-      // Only trigger HTMX on elements that explicitly want it
-      let target = event.target.closest('[hx-trigger~="shiftclick"]');
-      if (target) {
-        htmx.trigger(target, 'shiftclick');
-      }
-    }
-  });
-}
-enableShiftClickTrigger();
+// function enableShiftClickTrigger(){
+//   document.addEventListener('click', function (event) {
+//     if (event.shiftKey) {
+//       // Only trigger HTMX on elements that explicitly want it
+//       let target = event.target.closest('[hx-trigger~="shiftclick"]');
+//       if (target) {
+//         htmx.trigger(target, 'shiftclick');
+//       }
+//     }
+//   });
+// }
+// enableShiftClickTrigger();
 
 function shiftClickDataGrid(event){
     const el = event.target.closest('.table-row');

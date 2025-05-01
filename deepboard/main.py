@@ -1,6 +1,6 @@
 import sys; sys.path.append('..')
 from fasthtml.common import *
-from datagrid import DataGrid, build_datagrid_endpoints, SortableColumnsJs, CompareButton
+from datagrid import DataGrid, build_datagrid_endpoints, SortableColumnsJs, CompareButton, right_click_handler_row
 from datagrid import right_click_handler as right_click_handler_dg
 from utils import prepare_db
 from pyutils.resultTable import ResultTable
@@ -73,6 +73,8 @@ async def get(fname:str, ext:str):
 
 @rt("/")
 def get(session):
+    if "show_hidden" not in session:
+        session["show_hidden"] = False
     return (Title("Table"),
             Div(id="custom-menu"),
             Div(
@@ -108,6 +110,8 @@ def get(session, run_ids: str):
 
 @rt("/reset")
 def get(session):
+    if "show_hidden" not in session:
+        session["show_hidden"] = False
     session["datagrid"] = dict()
     return Div(
                 Div(
@@ -134,16 +138,17 @@ def get(session, run_id: int):
 
 # Dropdown menu when right-cliked
 @rt("/get-context-menu")
-def get(elementId: str, top: int, left: int):
-    if elementId.startswith("grid-header"):
-        return right_click_handler_dg(elementId, top, left)
+def get(session, elementIds: str, top: int, left: int):
+    elementIds = elementIds.split(",")
+    if any(elementId.startswith("grid-header") for elementId in elementIds):
+        return right_click_handler_dg(elementIds, top, left)
+    elif any(elementId.startswith("grid-row") for elementId in elementIds):
+        return right_click_handler_row(session, elementIds, top, left)
     else:
         return Div(
-            Div(
-                Div('Option 1', hx_post='/copy', hx_target='this', cls="menu-item"),
-                Div('Option 2', hx_post='/copy', hx_target='this', cls="menu-item"),
-                cls='dropdown-menu'
-            ),
+            # Div(
+            #     cls='dropdown-menu'
+            # ),
             id='custom-menu',
             style=f'visibility: visible; top: {top}px; left: {left}px;',
         )

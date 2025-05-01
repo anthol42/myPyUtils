@@ -53,6 +53,7 @@ def Row(data, run_id, selected: bool):
         hx_trigger="click[!event.shiftKey]",
         hx_target="#experiment-table",  # Target DOM element to update
         hx_swap="innerHTML",  # Optional: how to replace content
+        id=f"grid-row-{run_id}",
         cls="table-row" + " table-row-selected" if selected else "table-row",
     )
 
@@ -61,11 +62,11 @@ def DataGrid(session, rename_col: str = None, wrapincontainer: bool = False):
 
     if "datagrid" not in session:
         session["datagrid"] = dict()
-
+    show_hidden = session.get("show_hidden", False)
     rows_selected = session["datagrid"].get("selected-rows") or []
     sort_by: Optional[str] = session["datagrid"].get("sort_by", None)
     sort_order: Optional[str] = session["datagrid"].get("sort_order", None)
-    columns, col_ids, data = rTable.get_results()
+    columns, col_ids, data = rTable.get_results(show_hidden=show_hidden)
     # If the columns to sort by is hidden, we reset it
     if sort_by is not None and sort_by not in col_ids:
         session["datagrid"]["sort_by"] = sort_by = None
@@ -185,12 +186,18 @@ def build_datagrid_endpoints(rt):
     rt("/sort")(sort)
     rt("/reorder_columns", methods=["POST"])(reorder_columns)
     rt("/shift_click_row")(shift_click_row) # Endpoint is called in the javascript file
+    rt("/hide_run")(hide_run)
+    rt("/show_run")(show_run)
+    rt("/show_hidden")(show_hidden)
+    rt("/hide_hidden")(hide_hidden)
+
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Right click menu
 # ---------------------------------------------------------------------------------------------------------------------
-def right_click_handler(elementId: str, top: int, left: int):
+def right_click_handler(elementIds: List[str], top: int, left: int):
     from __main__ import rTable
+    elementId = [elem for elem in elementIds if elem.startswith("grid-header-")][0]
     clicked_col = elementId.replace("grid-header-", "")
     hidden_columns = [(key, alias) for key, (order, alias) in rTable.result_columns.items() if order is None]
     return Div(
@@ -212,7 +219,33 @@ def right_click_handler(elementId: str, top: int, left: int):
         id='custom-menu',
         style=f'visibility: visible; top: {top}px; left: {left}px;',
     )
-
+def right_click_handler_row(session, elementIds: List[str], top: int, left: int):
+    from __main__ import rTable
+    elementId = [elem for elem in elementIds if elem.startswith("grid-row-")][0]
+    clicked_row = int(elementId.replace("grid-row-", ""))
+    hidden_runs = rTable.get_hidden_runs()
+    if clicked_row in hidden_runs:
+        hideshow_button = Li('Show', hx_get=f"/show_run?run_id={clicked_row}", hx_target='#experiment-table',
+                             hx_swap="innerHTML", cls="menu-item")
+    else:
+        hideshow_button = Li('Hide', hx_get=f"/hide_run?run_id={clicked_row}", hx_target='#experiment-table',
+                             hx_swap="innerHTML",cls="menu-item")
+    print(session)
+    if session.get("show_hidden", False):
+        toggle_visibility_button = Li('Hide Hidden', hx_get=f"/hide_hidden", hx_target='#experiment-table',
+                                      hx_swap="innerHTML", cls="menu-item")
+    else:
+        toggle_visibility_button = Li('Show Hidden', hx_get=f"/show_hidden", hx_target='#experiment-table',
+                                      hx_swap="innerHTML", cls="menu-item")
+    return Div(
+        Ul(
+            hideshow_button,
+            toggle_visibility_button,
+            cls='dropdown-menu'
+        ),
+        id='custom-menu',
+        style=f'visibility: visible; top: {top}px; left: {left}px;',
+    )
 
 async def hide_column(session, col: str):
     from __main__ import rTable
@@ -282,3 +315,21 @@ async def shift_click_row(session, run_id: int):
         session["datagrid"]["selected-rows"].append(run_id)
 
     return DataGrid(session), CompareButton(session, swap=True)
+
+async def hide_run(session, run_id: int):
+    from __main__ import rTable
+    rTable.hide_run(run_id)
+    return DataGrid(session)
+
+async def show_run(session, run_id: int):
+    from __main__ import rTable
+    rTable.show_run(run_id)
+    return DataGrid(session)
+
+async def show_hidden(session):
+    session["show_hidden"] = True
+    return DataGrid(session)
+
+async def hide_hidden(session):
+    session["show_hidden"] = False
+    return DataGrid(session)
