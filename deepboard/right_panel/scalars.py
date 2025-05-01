@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from fasthtml.common import *
 from fh_plotly import plotly2fasthtml
 from deepboard.components import Legend, Smoother, ChartType
-from deepboard.utils import get_lines
+from deepboard.utils import get_lines, make_fig
 
 def make_step_lines(socket, splits: set[str], metric: str, keys: set[tuple[str, str]]):
     from __main__ import CONFIG
@@ -43,73 +43,6 @@ def make_time_lines(socket, splits: set[str], metric: str, keys: set[tuple[str, 
                 ))
     return lines
 
-def ema(values, alpha):
-    """
-    Compute the Exponential Moving Average (EMA) of a list of values.
-
-    Parameters:
-    - values (list or numpy array): The data series.
-    - alpha (float): Smoothing factor (between 0 and 1).
-
-    Returns:
-    - list: EMA-smoothed values.
-    """
-    return values.ewm(alpha=alpha, adjust=False).mean()
-
-def make_fig(lines, type: str = "step", smoothness: float = 0.):
-    from __main__ import CONFIG
-    fig = go.Figure()
-
-    for label, steps, values, color, epochs in lines:
-        # Smooth the values
-        if smoothness > 0:
-            values = ema(values, 1.01 - smoothness / 100)
-        if epochs is not None:
-            additional_setup = dict(hovertext=values, customdata=[[e, label] for e in epochs],
-                                    hovertemplate="%{customdata[1]} : %{y:.4f} | Epoch: %{customdata[0]}<extra></extra>")
-        else:
-            additional_setup = dict(hovertext=values, customdata=[[label] for _ in values],
-                                    hovertemplate="%{customdata[0]} : %{y:.4f}<extra></extra>")
-
-        if type == "time":
-            steps = [datetime(1970, 1, 1) + timedelta(seconds=s) for s in steps]
-        fig.add_trace(go.Scatter(
-            x=steps,
-            y=values,
-            mode='lines',
-            name=label,
-            line=dict(color=color),
-            **additional_setup
-        ))
-
-    if type == "step":
-        fig.update_layout(
-            CONFIG.PLOTLY_THEME,
-            xaxis_title="Step",
-            yaxis_title="Value",
-            hovermode="x unified",
-            showlegend=False,
-            autosize=True,
-            height=None,  # Let CSS control it
-            width=None,  # Let CSS control it
-            margin=dict(l=0, r=0, t=15, b=0)
-        )
-    elif type == "time":
-        fig.update_layout(
-            CONFIG.PLOTLY_THEME,
-            xaxis_title="Duration",
-            yaxis_title="Value",
-            hovermode="x unified",
-            showlegend=False,
-            xaxis_tickformat="%H:%M:%S",  # format the ticks like 01:23:45
-            autosize=True,
-            height=None,  # Let CSS control it
-            width=None,  # Let CSS control it
-            margin=dict(l=0, r=0, t=15, b=0)
-        )
-    else:
-        raise ValueError(f"Unknown plotting type: {type}")
-    return fig
 
 
 def Setup(session, labels: list[tuple]):

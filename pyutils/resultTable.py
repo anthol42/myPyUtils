@@ -819,12 +819,12 @@ if __name__ == "__main__":
     import numpy as np
     rtable = ResultTable(nocommit_action=NoCommitAction.WARN)
     cli = {
-        "fract": 0.25,
+        "fract": 1.,
         "sample_inputs": False,
         "dataset": "Pâques",
     }
     start = datetime.now()
-    writer = rtable.new_run("Experiment3", "results/myconfig.yml", cli=cli, comment="Test 5")
+    writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli, comment="")
     writer.add_hparams(**cli)
     # writer = rtable.load_run(2)
     # print(writer.run_id)
@@ -832,15 +832,15 @@ if __name__ == "__main__":
     # train_step = [s.value for s in writer.read_scalar("Train/acc")]
     # print(train_step)
     # print(val_step)
-    for rep in range(3):
+    for rep in range(1):
         if rep > 0:
             writer.new_repetition()
         for e in range(10):
             for i in range(100):
-                writer.add_scalar("Train/acc", np.sqrt(i / 10) / 4, epoch=e)
-                writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 4.1, epoch=e)
-                writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.9, epoch=e)
-                writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 4.01, epoch=e)
+                writer.add_scalar("Train/acc", np.sqrt(i / 10) / 4.2, epoch=e)
+                writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 4.3, epoch=e)
+                writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.8, epoch=e)
+                writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 4.1, epoch=e)
                 time.sleep(0.05)
                 print(rep, e, i)
 

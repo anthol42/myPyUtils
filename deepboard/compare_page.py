@@ -1,7 +1,24 @@
 from fasthtml.common import *
 from datetime import datetime
 from deepboard.components import Legend, ChartType, Smoother
+from deepboard.utils import get_lines
+from typing import *
 
+def make_lines(socket, split: set[str], metric: str, runIDs: List[int], type: Literal["step", "duration"]):
+    from __main__ import CONFIG
+    lines = []
+    for i, runID in enumerate(runIDs):
+        reps = get_lines(socket, split, metric, key=type)
+
+        for rep_idx, rep in enumerate(reps):
+            lines.append((
+                f'{runID}.{rep_idx}',
+                rep["index"],
+                rep["value"],
+                CONFIG.COLORS[i % len(CONFIG.COLORS)],
+                rep["epoch"],
+            ))
+    return lines
 
 def SplitCard(session, split: str, metrics: List[str], opened: bool = True):
     from __main__ import rTable
@@ -64,13 +81,20 @@ def ChartCardList(session):
 
 def CompareSetup(session, swap: bool = False):
     from __main__ import CONFIG
+    from __main__ import rTable
     if "hidden_lines" in session["compare"]:
         hidden_lines = session["compare"]["hidden_lines"]
     else:
         hidden_lines = []
     raw_labels = [int(txt) for txt in session["compare"]["selected-rows"]]
+    sockets = [rTable.load_run(runID) for runID in raw_labels]
     raw_labels = sorted(raw_labels)
-    labels = [(str(label), CONFIG.COLORS[i % len(CONFIG.COLORS)], str(label) in hidden_lines) for i, label in enumerate(raw_labels)]
+    repetitions = [socket.get_repetitions() for socket in sockets]
+    if any(len(rep) > 1 for rep in repetitions):
+        labels = [(f"{label}.{rep}", CONFIG.COLORS[i % len(CONFIG.COLORS)], f"{label}.{rep}" in hidden_lines) for i, label in enumerate(raw_labels) for rep in sockets[i].get_repetitions()]
+    else:
+        labels = [(f"{label}", CONFIG.COLORS[i % len(CONFIG.COLORS)], f"{label}" in hidden_lines) for
+                  i, label in enumerate(raw_labels)]
     return Div(
         H1("Setup", cls="chart-scalar-title"),
         Legend(session, labels, path="/compare", selected_rows_key="compare"),
