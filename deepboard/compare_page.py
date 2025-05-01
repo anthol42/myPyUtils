@@ -26,6 +26,7 @@ def make_lines(sockets, split: str, metric: str, runIDs: List[int], type: Litera
 def Chart(session, split: str, metric: str, type: Literal["step", "duration"], running: bool = False):
     from __main__ import rTable
     runIDs = [int(txt) for txt in session["compare"]["selected-rows"]]
+    runIDs.sort()
     sockets = [rTable.load_run(runID) for runID in runIDs]
     hidden_lines = session["compare"]["hidden_lines"] if "hidden_lines" in session["compare"] else []
     smoothness = session["compare"]["smoother_value"] - 1 if "smoother_value" in session["compare"] else 0
