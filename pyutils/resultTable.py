@@ -824,7 +824,7 @@ if __name__ == "__main__":
         "dataset": "Pâques",
     }
     start = datetime.now()
-    writer = rtable.new_run("Experiment1", "results/myconfig.yml", cli=cli, comment="")
+    writer = rtable.new_run("Experiment2", "results/myconfig.yml", cli=cli, comment="")
     writer.add_hparams(**cli)
     # writer = rtable.load_run(2)
     # print(writer.run_id)
@@ -837,14 +837,16 @@ if __name__ == "__main__":
             writer.new_repetition()
         for e in range(10):
             for i in range(100):
-                writer.add_scalar("Train/acc", np.sqrt(i / 10) / 4.2, epoch=e)
-                writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 4.3, epoch=e)
-                writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.8, epoch=e)
-                writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 4.1, epoch=e)
+                writer.add_scalar("Train/acc", np.sqrt(i / 10) / 4.8, epoch=e)
+                writer.add_scalar("Valid/acc", np.sqrt(i / 10) / 4.1, epoch=e)
+                writer.add_scalar("Train/f1", np.sqrt(i / 10) / 3.9, epoch=e)
+                writer.add_scalar("Valid/f1", np.sqrt(i / 10) / 4.3, epoch=e)
+                writer.add_scalar("Train/auroc", np.sqrt(i / 10) / 4., epoch=e)
+                writer.add_scalar("Valid/auroc", np.sqrt(i / 10) / 4., epoch=e)
                 time.sleep(0.05)
                 print(rep, e, i)
 
-    writer.write_result(loss=0.37, accuracy=0.9155, f1=0.935)
+    writer.write_result(loss=0.37, accuracy=0.93, f1=0.946)
     columns, col_ids, data = rtable.get_results()
     print(columns)
     for row in data:

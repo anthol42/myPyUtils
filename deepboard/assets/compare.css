@@ -31,7 +31,6 @@
     width: 90%;
 }
 .split-card{
-    height: 40vh;
     margin-top: 2em;
     margin-bottom: 2em;
     padding: 2rem;
@@ -59,8 +58,16 @@
     margin-bottom: 1rem;
 }
 
-.two-charts-container {
-
+.multi-charts-container {
+    margin-top: 2em;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+}
+.multi-charts-container > * { /*Children of the multi-chart-container will be 2 by rows*/
+    flex: 0 0 48%; /* 2 items per row, with some space between */
+    margin-bottom: 1em; /* Optional: adds spacing between rows */
 }
 .accordion-toggle {
   background-color: rgba(0, 0, 0, 0);

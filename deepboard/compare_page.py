@@ -1,18 +1,21 @@
 from fasthtml.common import *
 from datetime import datetime
 from deepboard.components import Legend, ChartType, Smoother
-from deepboard.utils import get_lines
+from deepboard.utils import get_lines, make_fig
+from fh_plotly import plotly2fasthtml
 from typing import *
 
-def make_lines(socket, split: set[str], metric: str, runIDs: List[int], type: Literal["step", "duration"]):
+def make_lines(sockets, split: str, metric: str, runIDs: List[int], type: Literal["step", "duration"]):
     from __main__ import CONFIG
     lines = []
+    all_reps = [socket.get_repetitions() for socket in sockets]
+    multi_rep = any(len(rep) > 1 for rep in all_reps)
     for i, runID in enumerate(runIDs):
-        reps = get_lines(socket, split, metric, key=type)
+        reps = get_lines(sockets[i], split, metric, key=type)
 
         for rep_idx, rep in enumerate(reps):
             lines.append((
-                f'{runID}.{rep_idx}',
+                f'{runID}.{rep_idx}' if multi_rep else f'{runID}',
                 rep["index"],
                 rep["value"],
                 CONFIG.COLORS[i % len(CONFIG.COLORS)],
@@ -20,11 +23,50 @@ def make_lines(socket, split: set[str], metric: str, runIDs: List[int], type: Li
             ))
     return lines
 
+def Chart(session, split: str, metric: str, type: Literal["step", "duration"], running: bool = False):
+    from __main__ import rTable
+    runIDs = [int(txt) for txt in session["compare"]["selected-rows"]]
+    sockets = [rTable.load_run(runID) for runID in runIDs]
+    hidden_lines = session["compare"]["hidden_lines"] if "hidden_lines" in session["compare"] else []
+    smoothness = session["compare"]["smoother_value"] - 1 if "smoother_value" in session["compare"] else 0
+    lines = make_lines(sockets, split, metric, runIDs, type)
+
+    # # Sort lines by label
+    lines.sort(key=lambda x: x[0])
+    # Hide lines if needed
+    lines = [line for line in lines if line[0] not in hidden_lines]
+    fig = make_fig(lines, type=type, smoothness=smoothness)
+
+    if running:
+        update_params = dict(
+            hx_get=f"/compare/chart?split={split}&metric={metric}&type={type}&running={running}",
+            hx_target=f"#chart-container-{split}-{metric}",
+            hx_trigger="every 10s",
+            hx_swap="outerHTML",
+        )
+    else:
+        update_params = {}
+    return Div(
+            Div(
+                H1(metric, cls="chart-title"),
+                cls="chart-header",
+                id=f"chart-header-{split}-{metric}"
+            ),
+        Div(
+            plotly2fasthtml(fig, js_options=dict(responsive=True)),
+            cls="chart-container",
+            id=f"chart-container-{split}-{metric}",
+            **update_params
+        ),
+        # style={"width": "45%"},
+        cls = "chart",
+        id = f"chart-{split}-{metric}",
+    )
+
 def SplitCard(session, split: str, metrics: List[str], opened: bool = True):
     from __main__ import rTable
     runIDs = sorted([int(rid) for rid in session["compare"]["selected-rows"]])
     sockets = [rTable.load_run(runID) for runID in runIDs]
-
     if opened:
         return Li(
             Div(
@@ -39,7 +81,9 @@ def SplitCard(session, split: str, metrics: List[str], opened: bool = True):
                 cls="split-card-header"
             ),
             Div(
-                cls="two-charts-container"
+                Chart(session, split, "acc", type="step", running=False),
+                Chart(session, split, "f1", type="step", running=False),
+                cls="multi-charts-container"
             ),
             cls="split-card",
             id=f"split-card-{split}",
@@ -87,8 +131,8 @@ def CompareSetup(session, swap: bool = False):
     else:
         hidden_lines = []
     raw_labels = [int(txt) for txt in session["compare"]["selected-rows"]]
-    sockets = [rTable.load_run(runID) for runID in raw_labels]
     raw_labels = sorted(raw_labels)
+    sockets = [rTable.load_run(runID) for runID in raw_labels]
     repetitions = [socket.get_repetitions() for socket in sockets]
     if any(len(rep) > 1 for rep in repetitions):
         labels = [(f"{label}.{rep}", CONFIG.COLORS[i % len(CONFIG.COLORS)], f"{label}.{rep}" in hidden_lines) for i, label in enumerate(raw_labels) for rep in sockets[i].get_repetitions()]
