@@ -842,7 +842,7 @@ if __name__ == "__main__":
     cli = {
         "fract": 1.,
         "sample_inputs": False,
-        "dataset": "Toys",
+        "dataset": "Test",
     }
     start = datetime.now()
     writer = rtable.new_run("Experiment2", "results/myconfig.yml", cli=cli, comment="")
@@ -867,7 +867,7 @@ if __name__ == "__main__":
                 time.sleep(0.05)
                 print(rep, e, i)
 
-    writer.write_result(loss=0.31, accuracy=0.94, f1=0.9542)
+    writer.write_result(loss=0.31, accuracy=0.94, f1=0.954200000000001)
     columns, col_ids, data = rtable.get_results()
     print(columns)
     for row in data:

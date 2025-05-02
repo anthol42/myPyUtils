@@ -1,5 +1,7 @@
 from fasthtml.common import *
 from datetime import datetime
+from deepboard.utils import smart_round
+
 def Header(name: str, col_id: str, sort_dir: str = None):
     if sort_dir == "asc":
         return Th(
@@ -41,12 +43,14 @@ def HeaderRename(name: str, col_id: str):
         )
     ),
 
-def format_value(value):
+def format_value(value, decimals: int = 4):
     if isinstance(value, datetime):
         return value.strftime('%Y-%m-%d %H:%M:%S')
+    if isinstance(value, float):
+        return smart_round(value, decimals)
     return value
 
-def Row(data, run_id, selected: bool, hidden: bool):
+def Row(data, run_id, selected: bool, hidden: bool, max_decimals: int):
     cls = "table-row"
     if selected:
         cls += " table-row-selected"
@@ -55,7 +59,7 @@ def Row(data, run_id, selected: bool, hidden: bool):
         cls += " table-row-hidden"
 
     return Tr(
-        *[Td(format_value(value)) for value in data],
+        *[Td(format_value(value, decimals=max_decimals)) for value in data],
         hx_get=f"/click_row?run_id={run_id}",  # HTMX will GET this URL
         hx_trigger="click[!event.shiftKey]",
         hx_target="#experiment-table",  # Target DOM element to update
@@ -65,7 +69,7 @@ def Row(data, run_id, selected: bool, hidden: bool):
     )
 
 def DataGrid(session, rename_col: str = None, wrapincontainer: bool = False):
-    from __main__ import rTable
+    from __main__ import rTable, CONFIG
 
     if "datagrid" not in session:
         session["datagrid"] = dict()
@@ -105,7 +109,7 @@ def DataGrid(session, rename_col: str = None, wrapincontainer: bool = False):
                     )
                     ),
                 Tbody(
-                    *[Row(row, run_id, selected=run_id in rows_selected, hidden=run_id in rows_hidden) for row, run_id in zip(data, run_ids)],
+                    *[Row(row, run_id, max_decimals=CONFIG.MAX_DEC, selected=run_id in rows_selected, hidden=run_id in rows_hidden) for row, run_id in zip(data, run_ids)],
                 ),
                 cls="data-grid"
             ),

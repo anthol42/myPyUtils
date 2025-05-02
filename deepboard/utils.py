@@ -3,6 +3,7 @@ import sqlite3
 from typing import *
 import pandas as pd
 import plotly.graph_objects as go
+from decimal import Decimal, ROUND_HALF_UP
 
 def _adapt_date_iso(val):
     """Adapt datetime.date to ISO 8601 date."""
@@ -129,3 +130,15 @@ def make_fig(lines, type: str = "step", smoothness: float = 0.):
     else:
         raise ValueError(f"Unknown plotting type: {type}")
     return fig
+
+
+def smart_round(val, decimals=4):
+    """
+    Round a float to the given number of decimal places. However, if the float already has less decimal, noting is done!
+    :param val: The value to round.
+    :param decimals: The maximum number of decimal places to round.
+    :return: The rounded value.
+    """
+    quantizer = Decimal('1').scaleb(-decimals)
+    d = Decimal(str(val)).quantize(quantizer, rounding=ROUND_HALF_UP)
+    return float(d.normalize())

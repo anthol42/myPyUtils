@@ -37,6 +37,8 @@ class Config:
         ),
     )
 
+    MAX_DEC = 4 # Maximum number of decimals
+
 CONFIG = Config()
 DATABASE = "../pyutils/results/result_table.db"
 
