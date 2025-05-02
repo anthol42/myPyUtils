@@ -2,44 +2,15 @@ import sys; sys.path.append('..')
 from fasthtml.common import *
 from datagrid import DataGrid, build_datagrid_endpoints, SortableColumnsJs, CompareButton, right_click_handler_row
 from datagrid import right_click_handler as right_click_handler_dg
-from utils import prepare_db
+from utils import prepare_db, Config
 from pyutils.resultTable import ResultTable
 from right_panel import RightPanel, build_right_panel_routes, reset_scalar_session
 from compare_page import ChartCardList, CompareSetup, build_compare_routes
 from fh_plotly import plotly_headers
 
-class Config:
-    COLORS = [
-        "#1f77b4",  # muted blue
-        "#ff7f0e",  # vivid orange
-        "#2ca02c",  # medium green
-        "#d62728",  # brick red
-        "#9467bd",  # muted purple
-        "#8c564b",  # brownish pink
-        "#e377c2",  # pink
-        "#7f7f7f",  # gray
-        "#bcbd22",  # lime yellow
-        "#17becf",  # cyan
-    ]
-    HIDDEN_COLOR = "#333333"  # gray for hidden lines
 
-    PLOTLY_THEME = dict(
-        plot_bgcolor='#111111',  # dark background for the plotting area
-        paper_bgcolor='#111111',  # dark background for the full figure
-        font=dict(color='white'),  # white text everywhere (axes, legend, etc.)
-        xaxis=dict(
-            gridcolor='#333333',  # subtle dark grid lines
-            zerolinecolor='#333333'
-        ),
-        yaxis=dict(
-            gridcolor='#333333',
-            zerolinecolor='#333333'
-        ),
-    )
 
-    MAX_DEC = 4 # Maximum number of decimals
-
-CONFIG = Config()
+CONFIG = Config.FromFile(os.path.expanduser('~/.config/deepboard/THEME.yml'))
 DATABASE = "../pyutils/results/result_table.db"
 
 prepare_db()

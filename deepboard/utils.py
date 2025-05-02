@@ -4,6 +4,8 @@ from typing import *
 import pandas as pd
 import plotly.graph_objects as go
 from decimal import Decimal, ROUND_HALF_UP
+import yaml
+import os
 
 def _adapt_date_iso(val):
     """Adapt datetime.date to ISO 8601 date."""
@@ -142,3 +144,60 @@ def smart_round(val, decimals=4):
     quantizer = Decimal('1').scaleb(-decimals)
     d = Decimal(str(val)).quantize(quantizer, rounding=ROUND_HALF_UP)
     return float(d.normalize())
+
+class Config:
+    COLORS = [
+        "#1f77b4",  # muted blue
+        "#ff7f0e",  # vivid orange
+        "#2ca02c",  # medium green
+        "#d62728",  # brick red
+        "#9467bd",  # muted purple
+        "#8c564b",  # brownish pink
+        "#e377c2",  # pink
+        "#7f7f7f",  # gray
+        "#bcbd22",  # lime yellow
+        "#17becf",  # cyan
+    ]
+    HIDDEN_COLOR = "#333333"  # gray for hidden lines
+
+    PLOTLY_THEME = dict(
+        plot_bgcolor='#111111',  # dark background for the plotting area
+        paper_bgcolor='#111111',  # dark background for the full figure
+        font=dict(color='white'),  # white text everywhere (axes, legend, etc.)
+        xaxis=dict(
+            gridcolor='#333333',  # subtle dark grid lines
+            zerolinecolor='#333333'
+        ),
+        yaxis=dict(
+            gridcolor='#333333',
+            zerolinecolor='#333333'
+        ),
+    )
+
+    MAX_DEC = 4 # Maximum number of decimals
+
+    @classmethod
+    def FromFile(cls, path: str):
+        self = cls()
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                data = yaml.load(f, Loader=yaml.FullLoader)
+            self._update_theme(data)
+        else:
+            print("NO theme found, using default theme")
+        return self
+
+    def _update_theme(self, data: dict):
+        for key, value in data.items():
+            if not isinstance(value, dict):
+                setattr(self, key, value)
+            else:
+                self._merge_dict(getattr(self, key), value)
+
+    def _merge_dict(self, d, u):
+        for k, v in u.items():
+            if isinstance(v, dict) and isinstance(d.get(k), dict):
+                self._merge_dict(d[k], v)
+            else:
+                d[k] = v
+        return d
