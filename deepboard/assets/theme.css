@@ -1,0 +1,27 @@
+:root {
+    /*General*/
+    --background-color: #121212;
+    --text_color: #e0e0e0;
+    --primary-color: #007BFF;
+    --primary-color-hover: #2196f3;
+    --button-shadow-color: rgba(255, 255, 255, 0.15);
+
+    /*Right-click menu*/
+    --menu-bg: #222;
+    --menu-bg-hover: #333;
+    --menu-border: 1px solid #555;
+    --menu-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+
+    /*Datagrid*/
+    --dg-even-row-bg: #1a1a1a;
+    --dg-border-color: #333;
+    --dg-header-color: #ccc;
+    --dg-header-secondary-color: #888;
+    --dg-header-bg: #2a2a2a;
+    --dg-shadow: 0 -1px 7px 0.5px rgba(255, 255, 255, 0.2);
+    --dg-border-radius: 8px;
+    --dg-header-active: #4d4d4d;
+    --dg-disabled-color: #555;
+    --dg-row-hover: #242424;
+    --dg-row-selected: #2a2a2a;
+}

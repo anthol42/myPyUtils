@@ -22,7 +22,8 @@ def _not_found(req, exc): return Titled('Oh no!', Div('We could not find that pa
 app = FastHTMLWithLiveReload(
     exception_handlers={404: _not_found},
     hdrs=(
-        Link(rel='stylesheet', href='assets/theme.css', type='text/css'),
+        Link(rel='stylesheet', href='assets/base.css', type='text/css'),
+        Link(rel='stylesheet', href='assets/datagrid.css', type='text/css'),
         Link(rel='stylesheet', href='assets/right_panel.css', type='text/css'),
         Link(rel='stylesheet', href='assets/charts.css', type='text/css'),
         Link(rel='stylesheet', href='assets/fileview.css', type='text/css'),

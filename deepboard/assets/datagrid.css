@@ -1,0 +1,117 @@
+@import url('theme.css');
+.data-grid {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 8px;
+}
+
+.data-grid td {
+  padding: 1em;
+  text-align: left;
+}
+
+.data-grid tr:nth-child(even) {
+  background-color: var(--dg-even-row-bg);
+}
+
+.data-grid td {
+  border-bottom: 1px solid var(--dg-border-color);
+  white-space: nowrap;
+}
+
+/* Sticky header */
+.data-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--dg-header-bg);
+  color: var(--dg-header-color);
+  border-bottom: 1px solid var(--dg-border-color);
+  white-space: nowrap;
+}
+.data-grid thead th div {
+  background-color: inherit;
+  padding: 1em; /* or whatever spacing you want */
+}
+
+/* Sticky first column */
+.data-grid tbody td:first-child,
+.data-grid thead th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: var(--dg-header-bg);
+}
+
+/* Make sure the header cell in the top-left corner stays above others */
+.data-grid thead th:first-child {
+  z-index: 3;
+}
+
+.scroll-container {
+  max-height: 60vh; /* adjust as needed */
+  max-width: 50vw;
+  overflow: auto;
+  position: relative;
+  box-shadow: var(--dg-shadow);
+  border-radius: var(--dg-border-radius);
+}
+
+.sortable {
+  background-color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  padding: 1rem;
+  cursor: pointer;
+}
+
+.rename-input {
+  color: var(--dg-header-color);
+  font-family: system-ui, sans-serif;
+  padding: 0.5rem;
+  font-size: 1rem;
+  background-color: var(--dg-header-active);
+  border: none;              /* No border */
+  border-radius: 0.5rem;     /* Smooth rounded corners */
+  outline: none;             /* Removes the default focus outline */
+}
+
+.sortable:hover {
+  background-color: var(--dg-header-active);
+}
+
+.sort-icon {
+  visibility: hidden;
+  font-size: 1.2rem;
+  color: var(--dg-header-secondary-color);
+  padding-left: 0.5rem;
+}
+
+.sortable:hover .sort-icon {
+  visibility: visible;
+}
+
+.table-container {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.table-row{
+    cursor: pointer;
+}
+
+.table-row-hidden{
+  color: var(--dg-disabled-color);
+}
+.data-grid tbody tr:hover{
+    background-color: var(--dg-row-hover);
+}
+
+.table-row-selected {
+  background-color: var(--dg-row-selected) !important;
+}
