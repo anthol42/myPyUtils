@@ -46,7 +46,14 @@ def format_value(value):
         return value.strftime('%Y-%m-%d %H:%M:%S')
     return value
 
-def Row(data, run_id, selected: bool):
+def Row(data, run_id, selected: bool, hidden: bool):
+    cls = "table-row"
+    if selected:
+        cls += " table-row-selected"
+
+    if hidden:
+        cls += " table-row-hidden"
+
     return Tr(
         *[Td(format_value(value)) for value in data],
         hx_get=f"/click_row?run_id={run_id}",  # HTMX will GET this URL
@@ -54,7 +61,7 @@ def Row(data, run_id, selected: bool):
         hx_target="#experiment-table",  # Target DOM element to update
         hx_swap="innerHTML",  # Optional: how to replace content
         id=f"grid-row-{run_id}",
-        cls="table-row" + " table-row-selected" if selected else "table-row",
+        cls=cls,
     )
 
 def DataGrid(session, rename_col: str = None, wrapincontainer: bool = False):
@@ -83,7 +90,7 @@ def DataGrid(session, rename_col: str = None, wrapincontainer: bool = False):
         )
 
     run_ids = [row[col_ids.index("run_id")] for row in data]
-
+    rows_hidden = rTable.get_hidden_runs() if show_hidden else []
     table = Table(
                 # We put the headers in a form so that we can sort them using htmx
                 Thead(
@@ -98,7 +105,7 @@ def DataGrid(session, rename_col: str = None, wrapincontainer: bool = False):
                     )
                     ),
                 Tbody(
-                    *[Row(row, run_id, selected=run_id in rows_selected) for row, run_id in zip(data, run_ids)],
+                    *[Row(row, run_id, selected=run_id in rows_selected, hidden=run_id in rows_hidden) for row, run_id in zip(data, run_ids)],
                 ),
                 cls="data-grid"
             ),

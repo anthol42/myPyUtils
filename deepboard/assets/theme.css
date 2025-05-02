@@ -126,6 +126,9 @@ h1 {
     cursor: pointer;
 }
 
+.table-row-hidden{
+  color: #555
+}
 .data-grid tbody tr:hover{
     background-color: #2a2a2a;
 }
