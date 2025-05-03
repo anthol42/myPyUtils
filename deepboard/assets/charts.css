@@ -174,3 +174,15 @@ input[type="range"] {
     color: var(--chart-setup-title);
     font-size: 1.5rem;
 }
+
+input[type="range"] {
+  accent-color: var(--primary-color);
+}
+
+input[type="range"]::-moz-range-progress {
+  background-color: var(--primary-color);
+}
+
+input[type="range"]::-moz-range-track {
+  background-color: var(--chart-disabled-color);
+}

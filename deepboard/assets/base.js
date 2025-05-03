@@ -47,18 +47,6 @@ function copyToClipboard(container) {
     });
 }
 
-// function enableShiftClickTrigger(){
-//   document.addEventListener('click', function (event) {
-//     if (event.shiftKey) {
-//       // Only trigger HTMX on elements that explicitly want it
-//       let target = event.target.closest('[hx-trigger~="shiftclick"]');
-//       if (target) {
-//         htmx.trigger(target, 'shiftclick');
-//       }
-//     }
-//   });
-// }
-// enableShiftClickTrigger();
 
 function shiftClickDataGrid(event){
     const el = event.target.closest('.table-row');
