@@ -842,7 +842,7 @@ if __name__ == "__main__":
     cli = {
         "fract": 1.,
         "sample_inputs": False,
-        "dataset": "Test",
+        "dataset": "MultiReps",
     }
     start = datetime.now()
     writer = rtable.new_run("Experiment2", "results/myconfig.yml", cli=cli, comment="")
@@ -853,7 +853,7 @@ if __name__ == "__main__":
     # train_step = [s.value for s in writer.read_scalar("Train/acc")]
     # print(train_step)
     # print(val_step)
-    for rep in range(1):
+    for rep in range(3):
         if rep > 0:
             writer.new_repetition()
         for e in range(10):

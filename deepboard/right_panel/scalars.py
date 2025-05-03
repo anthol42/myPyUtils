@@ -15,13 +15,22 @@ def make_step_lines(socket, splits: set[str], metric: str, keys: set[tuple[str, 
         if tag in keys:
             reps = get_lines(socket, split, metric, key="step")
 
-            for rep_idx, rep in enumerate(reps):
+            if len(reps) > 1:
+                for rep_idx, rep in enumerate(reps):
+                    lines.append((
+                        f'{split}_{rep_idx}',
+                        rep["index"],
+                        rep["value"],
+                        CONFIG.COLORS[i % len(CONFIG.COLORS)],
+                        rep["epoch"],
+                    ))
+            else:
                 lines.append((
-                    f'{split}_{rep_idx}',
-                    rep["index"],
-                    rep["value"],
+                    f'{split}',
+                    reps[0]["index"],
+                    reps[0]["value"],
                     CONFIG.COLORS[i % len(CONFIG.COLORS)],
-                    rep["epoch"],
+                    reps[0]["epoch"],
                 ))
     return lines
 
@@ -33,13 +42,22 @@ def make_time_lines(socket, splits: set[str], metric: str, keys: set[tuple[str, 
         if tag in keys:
             reps = get_lines(socket, split, metric, key="duration")
 
-            for rep_idx, rep in enumerate(reps):
+            if len(reps) > 1:
+                for rep_idx, rep in enumerate(reps):
+                    lines.append((
+                        f'{split}_{rep_idx}',
+                        rep["index"],
+                        rep["value"],
+                        CONFIG.COLORS[i % len(CONFIG.COLORS)],
+                        rep["epoch"],
+                    ))
+            else:
                 lines.append((
-                    f'{split}_{rep_idx}',
-                    rep["index"],
-                    rep["value"],
+                    f'{split}',
+                    reps[0]["index"],
+                    reps[0]["value"],
                     CONFIG.COLORS[i % len(CONFIG.COLORS)],
-                    rep["epoch"],
+                    reps[0]["epoch"],
                 ))
     return lines
 
@@ -145,8 +163,11 @@ def ScalarTab(session, runID, swap: bool = False):
     splits = {split for split, label in keys}
     # Get repetitions
     available_rep = socket.get_repetitions()
-    line_names = [(f'{split}_{rep}', CONFIG.COLORS[i % len(CONFIG.COLORS)], f'{split}_{rep}' in session["scalars"]['hidden_lines']) for i, split in enumerate(splits) for rep in
-                  available_rep]
+    if len(available_rep) > 1:
+        line_names = [(f'{split}_{rep}', CONFIG.COLORS[i % len(CONFIG.COLORS)], f'{split}_{rep}' in session["scalars"]['hidden_lines']) for i, split in enumerate(splits) for rep in
+                      available_rep]
+    else:
+        line_names = [(f'{split}', CONFIG.COLORS[i % len(CONFIG.COLORS)], f'{split}' in session["scalars"]['hidden_lines']) for i, split in enumerate(splits)]
     # Sort lines by label
     line_names.sort(key=lambda x: x[0])
     status = socket.status
