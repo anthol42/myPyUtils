@@ -57,7 +57,10 @@ def OpenPanel(session, run_id: int, active_tab: str = 'scalars'):
     )
 
 def RightPanel(session):
-    placeholder_text = 'Select an item to see the content.'
+    placeholder_text = [
+        P("Select an item to see the run", cls="right-panel-placeholder"),
+        P("Shift + click to compare runs", cls="right-panel-placeholder")
+    ]
     if "datagrid" in session and session["datagrid"].get("selected-rows") and len(session["datagrid"]["selected-rows"]) == 1:
         run_id = session["datagrid"]["selected-rows"][0]
     else:
@@ -70,7 +73,7 @@ def RightPanel(session):
             hx_swap="outerHTML",
             cls="close-button",
         ) if run_id is not None else None,
-        Div(P(placeholder_text, cls="right-panel-placeholder")) if run_id is None else OpenPanel(session, run_id),
+        Div(*placeholder_text) if run_id is None else OpenPanel(session, run_id),
         id='right-panel',
         hx_swap_oob='true'
     ),
