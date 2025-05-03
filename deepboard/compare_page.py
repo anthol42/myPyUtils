@@ -84,7 +84,7 @@ def SplitCard(session, split: str, metrics: List[str]):
     if opened:
         return Li(
             Div(
-                H1(split, cls=".split-card-title"),
+                H1(split, cls="split-card-title"),
                 Button(
                     I(cls="fas fa-chevron-down"),
                     hx_get=f"/compare/toggle_accordion?split={split}&metrics={','.join(metrics)}&open=false",

@@ -2,7 +2,7 @@
     /*General*/
     --background-color: #121212;
     --text_color: #e0e0e0;
-    --secondary-text-color: #aaa;
+    --secondary-text-color: #ccc;
     --primary-color: #007BFF;
     --primary-color-hover: #2196f3;
     --button-shadow-color: rgba(255, 255, 255, 0.15);
@@ -23,7 +23,7 @@
     /*Datagrid*/
     --dg-even-row-bg: #1a1a1a;
     --dg-border-color: #333;
-    --dg-header-color: #ccc;
+    --dg-header-color: var(--secondary-text-color);
     --dg-header-secondary-color: #888;
     --dg-header-bg: #2a2a2a;
     --dg-shadow: 0 -1px 7px 0.5px rgba(255, 255, 255, 0.2);
@@ -34,7 +34,7 @@
     --dg-row-selected: #2a2a2a;
 
     /*Side panel - right*/
-    --sp-color: #ccc;
+    --sp-color: var(--secondary-text-color);
     --sp-accent-color: #fff;
     --sp-bg-color: #2a2a2a;
     --sp-bg-hover: #2F2F2F;
@@ -42,7 +42,7 @@
     --sp-tab-bg-hover: #4d4d4d;
 
     --sp-table-bg: #1e1e1e;
-    --sp-table-color: #ccc;
+    --sp-table-color: var(--secondary-text-color);
     --sp-table-hover-bg: #2c2c2c;
     --sp-table-header-color: #eee;
     --sp-table-header-bg: #2a2a2a;
@@ -57,11 +57,20 @@
     /*Charts*/
     --chart-legend-bg: #4d4d4d;
     --chart-legend-bg-hover: #333;
-    --chart-legend-color: #ccc;
+    --chart-legend-color: var(--secondary-text-color);
 
     --chart-section-title: #fff;
-    --chart-section-title-line: 2px solid #ccc;
+    --chart-section-title-line: 2px solid var(--secondary-text-color);
+    --chart-metric-color: #fff;
     --chart-setup-title: #fff;
     --chart-disabled-color: #555;
     --chart-typebox-shadow: 0 0 6px rgba(30, 144, 255, 0.5);
+
+    /*Compare page*/
+    --cmp-card-bg: #2a2a2a;
+    --cmp-card-shadow: 0 1px 7px 0.5px rgba(255, 255, 255, 0.2);
+    --cmp-card-color: var(--secondary-text-color);
+    --cmp-chart-title: var(--secondary-text-color);
+    --cmp-accordion-color: var(--secondary-text-color);
+    --cmp-accordion-color-hover: #4d4d4d;
 }

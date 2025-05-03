@@ -23,6 +23,7 @@
 }
 
 .chart-title {
+    color: var(--chart-metric-color);
     font-size: 1.5rem;
 }
 
