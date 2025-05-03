@@ -8,7 +8,7 @@
 }
 
 .right-panel-placeholder {
-  color: #aaa;
+  color: var(--secondary-text-color);
   font-size: 1.1rem;
 }
 
@@ -18,14 +18,14 @@
   left: 1rem;
   background: none;
   border: none;
-  color: #aaa;
+  color: var(--secondary-text-color);
   font-size: 2rem;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
 .close-button:hover {
-  color: #d0d0d0;
+  color: var(--text_color);
 }
 
 .open-right-panel{
@@ -53,8 +53,8 @@ margin: 0;
 .tab {
   padding: 0.75rem 1.5rem;
   cursor: pointer;
-  background-color: #1a1a1a; /* Slightly darker than unselected tab */
-  color: #ccc;
+  background-color: var(--sp-tab-bg); /* Slightly darker than unselected tab */
+  color: var(--sp-color);
   border-top-left-radius: 10px;
   border-top-right-radius: 10px;
   margin-right: 4px;
@@ -62,19 +62,19 @@ margin: 0;
 }
 
 .tab:hover {
-  background-color: #4d4d4d;
+  background-color: var(--sp-tab-bg-hover);
 }
 
 .tab.active {
-  background-color: #2a2a2a;
+  background-color: var(--sp-bg-color);
 }
 
 .tab-content {
-  background-color: #2a2a2a;
+  background-color: var(--sp-bg-color);
   padding: 2rem;
   border-top: none;
   border-radius: 0 10px 10px 10px;
-  color: #ccc;
+  color: var(--sp-color);
   width: 100%;
   height: 100%;
   overflow-y: auto;
@@ -91,7 +91,7 @@ border-collapse: collapse;
 }
 
 .info-table tr {
-    border-top: 1px solid #ccc;
+    border-top: 1px solid var(--sp-color);
 }
 
 .info-table td {
@@ -104,18 +104,18 @@ border-collapse: collapse;
 }
 
 .info-table tr:hover {
-  background-color: #2c2c2c;
+  background-color: var(--sp-bg-hover);
 }
 
 .info-label {
   font-weight: bold;
-  color: #fff;
+  color: var(--sp-accent-color);
   padding: 0;
   margin: 0;
 }
 
 .info-value {
-  color: #ccc;
+  color: var(--sp-color);
   font-weight: normal;
   text-align: right;
   font-size: 1.1rem;
@@ -127,13 +127,13 @@ border-collapse: collapse;
 .hparams-table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #1e1e1e;
-  color: #ccc;
+  background-color: var(--sp-table-bg);
+  color: var(--sp-table-color);
   border-radius: 8px;
   overflow-x: hidden;
   overflow-y: auto;
   font-size: 0.95rem;
-  box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.05);
+  box-shadow: var(--sp-table-shadow);
 }
 
 .hparams-table th,
@@ -144,8 +144,8 @@ border-collapse: collapse;
 }
 
 .hparams-table th {
-  background-color: #2a2a2a;
-  color: #eee;
+  background-color: var(--sp-table-header-bg);
+  color: var(--sp-table-header-color);
   font-weight: 600;
 }
 
@@ -154,7 +154,7 @@ border-collapse: collapse;
 }
 
 .hparams-table tr:hover td {
-  background-color: #2c2c2c;
+  background-color: var(--sp-table-hover-bg);
   transition: background-color 0.2s ease-in-out;
 }
 
