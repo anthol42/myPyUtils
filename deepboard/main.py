@@ -1,3 +1,4 @@
+import os.path
 import sys; sys.path.append('..')
 from fasthtml.common import *
 from datagrid import DataGrid, build_datagrid_endpoints, SortableColumnsJs, CompareButton, right_click_handler_row
@@ -7,8 +8,16 @@ from pyutils.resultTable import ResultTable
 from right_panel import RightPanel, build_right_panel_routes, reset_scalar_session
 from compare_page import ChartCardList, CompareSetup, build_compare_routes
 from fh_plotly import plotly_headers
+import shutil
 
+if not os.path.exists(os.path.expanduser('~/.config/deepboard')):
+    os.makedirs(os.path.expanduser('~/.config/deepboard'))
 
+if not os.path.exists(os.path.expanduser('~/.config/deepboard/THEME.yml')):
+    shutil.copy("./THEME.yml", os.path.expanduser('~/.config/deepboard/THEME.yml'))
+
+if not os.path.exists(os.path.expanduser('~/.config/deepboard/THEME.css')):
+    shutil.copy("assets/theme.css", os.path.expanduser('~/.config/deepboard/THEME.css'))
 
 CONFIG = Config.FromFile(os.path.expanduser('~/.config/deepboard/THEME.yml'))
 DATABASE = "../pyutils/results/result_table.db"
@@ -40,6 +49,10 @@ rt = app.route
 @rt("/assets/{fname:path}.{ext:static}")
 async def get(fname:str, ext:str):
     print(f"\n\nServing static file: {fname}.{ext}")
+    if fname == "theme" and ext == "css":
+        if os.path.exists(os.path.expanduser('~/.config/deepboard/theme.css')):
+            return FileResponse(os.path.expanduser('~/.config/deepboard/THEME.css'))
+
     return FileResponse(f'assets/{fname}.{ext}')
 
 # DataGrid
