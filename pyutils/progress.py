@@ -1,6 +1,6 @@
 import time
 from datetime import datetime, timedelta
-from .color import BaseColor, Color, Colors, ResetColor
+from color import BaseColor, Color, Colors, ResetColor
 import math
 from typing import *
 import shutil
@@ -436,10 +436,10 @@ class progress:
         cursor_progress = (self.count / self.total) * line_width - cursor_pos
         cursor = self.cursors[math.floor(cursor_progress * len(self.cursors))]
         if self.count == self.total:
-            cursor = self.cu
+            cursor = ""
 
         self.last_display = datetime.now()
-        line = f"{self.delim[0]}{self.cu * cursor_pos}{cursor}{self.cd * (line_width - cursor_pos)}{self.delim[1]}  {ResetColor()}"
+        line = f"{self.delim[0]}{self.cu * cursor_pos}{cursor}{self.cd * (line_width - cursor_pos - 1)}{self.delim[1]}  {ResetColor()}"
         if self.color is not None:
             # Clear console
             print(f"\r\033[K", end="")
@@ -578,13 +578,8 @@ progress.set_config(
 )
 
 if __name__ == "__main__":
-    # a = [i for i in range(100)]
-    print("Loading")
-    for prg, a in prange(500, type="pip").ref():
-        time.sleep(0.05)
-        prg.report(value=a/100, test=-a)
+    import time
 
-    print("Epoch 2")
-    for prg, a in prange(500, type="dl").ref():
-        time.sleep(0.05)
-        prg.report(value=a/100, test=-a)
+    for i in progress(range(113), refresh_rate=0.1, max_width=500):
+        # print()
+        time.sleep(0.1)
