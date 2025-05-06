@@ -1,6 +1,7 @@
 ## 0.1.0
 - ```Color```: Now themes have a `.reset` attribute by default
-- ```ResultTable```: A new result table based on a SQLite3 database
+- ```ConfigFile```: Now have config options: Can get different variant of a config format
+- ```ConfigFile```: Now support default values
 ## 0.0.3
 - ```progress bar```: Fixed the auto-sizing (Now it should be accurate) + Remove trailing characters
 ## 0.0.2

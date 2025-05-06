@@ -23,6 +23,21 @@ def _recursive_mapper(sub_cfg: dict, sub_format: dict, path: str, overrides: dic
         elif isinstance(value, dict):
             _recursive_mapper(sub_cfg[key], value, f"{path}.{key}", overrides)
 
+def _unwrap_defaults(config_format: dict):
+    """
+    For every defaults in the config format, it will unwrap the type contained in them, thus removing
+    the Default objects from the config
+    :param config_format: The config format to unwrap
+    :return: None because it is a mutating recursive functions
+    """
+    for key, value in config_format.items():
+        if isinstance(value, Default):
+            config_format[key] = value.type
+            value = value.type
+
+        if isinstance(value, dict):
+            _unwrap_defaults(value)
+
 def map_profiles(config: dict, config_format: dict):
     overrides = {}
     _recursive_mapper(config, config_format, "", overrides)
@@ -39,49 +54,66 @@ def _notif_error(msg: str, how: RaiseType):
         print(f"{Colors.warning}{msg}{ResetColor()}")
 
 def _recursive_check(config, expected, verify_path, verify_out_path, path, raise_type):
-    if config.keys() != expected.keys():
-        missing_keys = set(expected.keys()) - set(config.keys())
-        unknown_keys = set(config.keys()) - set(expected.keys())
+    expected_no_def = set(key for key, value in expected.items() if not isinstance(value, Default))
+    expected_all_keys = set(expected.keys())
+    config_keys = set(config.keys())
+    if config_keys != expected_no_def:
+        missing_keys = expected_no_def - config_keys
+        unknown_keys = config_keys - expected_no_def
+        for key in unknown_keys.copy():
+            if key in expected_all_keys:
+                unknown_keys.remove(key)
         if len(missing_keys) > 0 and len(unknown_keys) > 0:
             _notif_error(f"Config file is invalid at '{path[1:]}'. missing keys: {missing_keys} || and have these keys that are "
                          f"unknown: {unknown_keys}", raise_type)
         elif len(missing_keys) > 0:
             _notif_error(f"Config file is invalid at '{path[1:]}'. missing keys: {missing_keys}", raise_type)
-        else:
+        elif len(unknown_keys) > 0:
             _notif_error(f"Config file is invalid at '{path[1:]}'. have these keys that are unknown: {unknown_keys}", raise_type)
-    else:
-        for key, value in expected.items():
-            if isinstance(value, str):
-                if value == "ipath" and verify_path:
-                    if "/*" in config[key]:
-                        if len(glob.glob(config[key], recursive = True)) == 0:
-                            _notif_error(f"Config file contains invalid input path at key: {key}", raise_type)
-                    else:
-                        if not os.path.exists(config[key]):
-                            _notif_error(f"Config file contains invalid input path at key: {key}", raise_type)
-                elif value == "opath" and verify_out_path:
-                    if not os.path.exists(config[key]):
-                        _notif_error(f"Config file contains invalid output path at key: {key}", raise_type)
-            elif isinstance(value, dict):
-                _recursive_check(config[key], expected[key], verify_path, verify_out_path, f"{path}.{key}", raise_type)
-            elif isinstance(value, ProfileType):
-                for item in config[key]:
-                    if not isinstance(item, value.T):
-                        _notif_error(f"Config file has value of type {type(item)} where it is "
-                                                 f"supposed to be {value.T} at key {key}.", raise_type)
-            elif isinstance(value, tuple):
-                isOk = False
-                for el_type in value:
-                    if isinstance(config[key], el_type):
-                        isOk = True
 
-                if not isOk:
-                    _notif_error(f"Config file has value of type {type(config[key])} where it is "
-                                                 f"supposed to be {value} at key {key}." , raise_type)
+    for key, value in expected.items():
+        if isinstance(value, Default):
+            # Check if the key exists
+            if key not in config:
+                # If it does not exist, we set it then continue to the next keys
+                config[key] = value.default
+                continue
             else:
-                if not isinstance(config[key], value) and config[key] is not None:
-                    _notif_error(f"Config file has value of type {type(config[key])} where it is "
-                                                    f"supposed to be {value} at key {key}.", raise_type)
+                # If the key exists, check if the type is the good one
+                value = value.type
+                print(value)
+
+        if isinstance(value, str):
+            if value == "ipath" and verify_path:
+                if "/*" in config[key]:
+                    if len(glob.glob(config[key], recursive = True)) == 0:
+                        _notif_error(f"Config file contains invalid input path at key: {key}", raise_type)
+                else:
+                    if not os.path.exists(config[key]):
+                        _notif_error(f"Config file contains invalid input path at key: {key}", raise_type)
+            elif value == "opath" and verify_out_path:
+                if not os.path.exists(config[key]):
+                    _notif_error(f"Config file contains invalid output path at key: {key}", raise_type)
+        elif isinstance(value, dict):
+            _recursive_check(config[key], expected[key], verify_path, verify_out_path, f"{path}.{key}", raise_type)
+        elif isinstance(value, ProfileType):
+            for item in config[key]:
+                if not isinstance(item, value.T):
+                    _notif_error(f"Config file has value of type {type(item)} where it is "
+                                             f"supposed to be {value.T} at key {key}.", raise_type)
+        elif isinstance(value, tuple):
+            isOk = False
+            for el_type in value:
+                if isinstance(config[key], el_type):
+                    isOk = True
+
+            if not isOk:
+                _notif_error(f"Config file has value of type {type(config[key])} where it is "
+                                             f"supposed to be {value} at key {key}." , raise_type)
+        else:
+            if not isinstance(config[key], value) and config[key] is not None:
+                _notif_error(f"Config file has value of type {type(config[key])} where it is "
+                                                f"supposed to be {value} at key {key}.", raise_type)
 
 
 
@@ -97,6 +129,14 @@ def verify_config(config: dict, expected: dict, verify_path=True, verify_out_pat
     :return: None
     """
     _recursive_check(config, expected, verify_path, verify_out_path, "", raise_type)
+
+class Default:
+    """
+    Set an optional key with a default value
+    """
+    def __init__(self, type: type, default: Any):
+        self.type = type
+        self.default = default
 
 def Profile(arg: Union[str, type]):
     if isinstance(arg, str):
@@ -407,6 +447,7 @@ class ConfigFile(_Config):
         if len(profiles) > 0:
             profiles = ProfileList(Profile(s) for s in profiles)
             if config_format is not None:
+                _unwrap_defaults(config_format)
                 overrides = map_profiles(config, config_format)
             else:
                 overrides = map_profiles(config, profile_mapping)
@@ -468,6 +509,109 @@ class ConfigFile(_Config):
             return f'PROFILES: {self.profiles}\n\n{s}'
         else:
             return f'PROFILES: NO PROFILES FOUND\n\n{s}'
+
+def _recursive_find_option(d: dict, prev_options: set[str]):
+    for key, value in d.items():
+        if isinstance(value, ConfigOptions):
+            names = value.options
+            prev_options.add(names)
+        elif isinstance(value, dict):
+            _recursive_find_option(value, prev_options)
+
+def _recursive_get_option(d: dict, option: str):
+    out = {}
+    for key, value in d.items():
+
+        if isinstance(value, ConfigOptions):
+            value = value.select(option=option)
+            isOption = True
+        else:
+            isOption = False
+
+        if isinstance(value, dict):
+            value = _recursive_get_option(value, option)
+
+        if isOption and value is None:
+            # We do not save the kay/value because it was an optional option
+            continue
+
+        out[key] = value
+
+    return out
+
+
+class ConfigFormat:
+    def __init__(self, all_formats: dict):
+        self.all_formats = all_formats
+
+    def get_options(self):
+        options = set()
+        _recursive_find_option(self.all_formats, options)
+        return options
+
+    def get(self, *, option: Optional[str] = None) -> Dict:
+        """
+        Extract the appropriate option from all config formats. It will return a dictionary without any Option object
+        If the all_formats already do not contain any option object, you can pass None and it will simply return the
+        config format. If you do not provide an option name, and options are specified, it will raise a valueError.
+        :param option: The option to extract.
+        :return: The config dict
+        """
+        if option is None and len(self.get_options()) > 0:
+            raise ValueError(f"When the config format contains options, you must specify which option to choose. Received None!")
+        return _recursive_get_option(self.all_formats, option)
+
+
+class NotInit:
+    """
+    Uninitialized option
+    """
+    def __init__(self):
+        pass
+
+class ConfigOption:
+    def __init__(self, name: str):
+        self.name = name
+        self._option: Union[NotInit, Dict] = NotInit()
+
+    def __call__(self, option: Optional[Dict]):
+        self._option = option
+        return self
+
+    @property
+    def option(self) -> dict:
+        if isinstance(self._option, NotInit):
+            raise RuntimeError(f"The {self.name} ConfigOption has no value. Consider initializing it by calling the object.\n"
+                               f"Example: ... = ConfigOption({self.name})({'{...}'})")
+        else:
+            return self._option
+
+class ConfigOptions:
+    def __init__(self, *args: ConfigOption):
+        self._options = args
+    @property
+    def options(self):
+        return set(op.name for op in self._options)
+
+
+    def select(self, *, option: str) -> dict:
+        """
+        Select the corresponding option, and return a dict
+        :param option: The option name
+        :return: The appropriate dictionary
+        """
+        ops = {op.name: op for op in self._options}
+        if option in ops:
+            return ops[option].option
+        elif "default" in ops:
+            return ops["default"].option
+        else:
+            raise KeyError(f"Option name: {option} is not defined. Consider adding a 'default' option as a fallback.")
+
+
+# Alias
+Option = ConfigOption
+Options = ConfigOptions
 
 if __name__ == "__main__":
     config_format = {
