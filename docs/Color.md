@@ -46,9 +46,9 @@ print(f"{RGBColor(255, 255, 0)}{BackgroundColor(0, 0, 0)}This text is yellow on 
 If you think it is tedious to always specify the number, or the hex value, of the color you want to use, you can setup
 a theme, and simply use the predefined color names. Here is an example:
 ```python
-from pyutils.color import Colors, ResetColor
+from pyutils.color import Colors
 
-print(f"{Colors.green}This text is green{ResetColor()}")
+print(f"{Colors.green}This text is green{Colors.reset}")
 ```
 
 You can also setup the theme using the ```Colors.set_theme(...)``` synthax. Every color that you specify in the method
