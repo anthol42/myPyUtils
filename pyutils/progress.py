@@ -1,6 +1,6 @@
 import time
 from datetime import datetime, timedelta
-from color import BaseColor, Color, Colors, ResetColor
+from .color import BaseColor, Color, Colors, ResetColor
 import math
 from typing import *
 import shutil
