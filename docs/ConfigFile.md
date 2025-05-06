@@ -64,6 +64,24 @@ config = ConfigFile("config.yml", config_format=expected_format, error_notif=Rai
 ```
 This will not exit the program if the configuration file is invalid, but it will print a warning and continue.
 
+### Default values
+Let's say you want a parameter in the config to be optional, you can specify a default value in the `config_format`. To
+do so, import the Default class from `pyutils` and set the *type* of a key the Default object. Then, pass as the first
+argument the expected type and as the second the default value. This way, this key becomes optional.
+
+Example:
+```python
+from pyutils import Default
+expected_format = {
+    "key1": str,
+    "key2": Default(int, 42),
+    "key3": {
+        "keyA": str,
+        "keyB": float
+    }
+}
+```
+
 ### Profiles
 Finally, you can use Profiles by writing all the alternative of a key as an array, and specifying in the expected format
 that this key is a profile. It is important to note that the order is important. Let's look at an example with the same 
@@ -105,6 +123,42 @@ def get_profile():
 config.change_profile(get_profile())
 ```
 
+### Options
+It is possible to make the configuration file more dynamic by having `config_format` branches. Let's say you have 
+multiple program variant that each uses the same config base, but with some variant. Variant 1 might need the key ABC 
+while Variant 2 might need keys ABDE. How to define the same `config_format` for both types of configurations? We can
+use `Options`! Options will let you define a base `config_format` and allow multiple format for some keys. When loading 
+the `config_format`, the program can choose which option to use to get the appropriate config. 
+
+The different options must be named, and can contain any sub-config file (dict). To use options, we need to introduce
+three new types: `ConfigFormat`, `Options`, `Option`. To use this functionality, you need to wrap your `config_format` 
+dict by the `ConfigFormat` class. Next, you can specify the type `Options` for a key that should contain different 
+options. Within this `Options` object, you can list different named options with the `Option` class. This class needs a 
+single parameter - its name. Next, you can call the object with the sub_config_format associated with this option.
+
+Finally, to use the appropriate config_format, you can call the `get` method of the `ConfigFormat` object and specify 
+which option to use.
+
+For example:
+```python
+from pyutils import ConfigFormat, Options, Option
+config_format = ConfigFormat({
+    "A": str,
+    "B": int,
+    "specific": Options(
+        Option("Option1")({
+            "C": int
+        }),
+        Option("Option2")({
+            "D": int,
+            "E": str
+        })
+    )
+})
+
+config_format1 = config_format.get(option="Option1")
+config_format2 = config_format.get(option="Option2")
+```
 ### Get statistics
 As said before, this class comes with a statistics tool that counts the number of access to each key. It can help you 
 see unused keys. To see this, you can simply print the statistics:
