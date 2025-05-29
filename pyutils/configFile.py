@@ -81,7 +81,6 @@ def _recursive_check(config, expected, verify_path, verify_out_path, path, raise
             else:
                 # If the key exists, check if the type is the good one
                 value = value.type
-                print(value)
 
         if isinstance(value, str):
             if value == "ipath" and verify_path:

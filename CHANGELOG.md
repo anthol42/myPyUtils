@@ -1,3 +1,5 @@
+## 0.1.1
+- ```ConfigFile```: Fixed a debug print that was not removed
 ## 0.1.0
 - ```Color```: Now themes have a `.reset` attribute by default
 - ```ConfigFile```: Now have config options: Can get different variant of a config format
