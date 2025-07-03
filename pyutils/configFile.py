@@ -346,7 +346,6 @@ class _Config:
         :return: None
         """
         config = self._todict()
-        print(config)
         with open(path, "w") as file:
             file.write(yaml.dump(config))
 
