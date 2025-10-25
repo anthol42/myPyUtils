@@ -3,8 +3,4 @@ key1: value1
 key2: 2
 key3:
   keyA: valueA
-  keyB: 42.42
-key4: [
-        "local/path",
-        "remote/path"
-]
+  keyB: 42.

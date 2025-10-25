@@ -14,6 +14,9 @@ class RaiseType(enum.Enum):
 class InvalidConfigFileException(Exception):
     pass
 
+def _is_literal(tp):
+    return hasattr(tp, "__origin__") and tp.__origin__ is Literal
+
 def _recursive_mapper(sub_cfg: dict, sub_format: dict, path: str, overrides: dict):
     for key, value in sub_format.items():
         if isinstance(value, ProfileType):
@@ -53,7 +56,16 @@ def _notif_error(msg: str, how: RaiseType):
     else:
         print(f"{Colors.warning}{msg}{ResetColor()}")
 
-def _recursive_check(config, expected, verify_path, verify_out_path, path, raise_type):
+def _recursive_check(config, expected, tags, verify_path, verify_out_path, path, raise_type):
+    # Step 1: Detect tags and unwrap them
+    for name, T in expected.items():
+        if isinstance(T, Tag):
+            if T.tag in tags:
+                tags[T.tag].append(f"{path}.{name}" if path != "" else name)
+            else:
+                tags[T.tag] = [f"{path}.{name}" if path != "" else name]
+            expected[name] = T.value
+
     expected_no_def = set(key for key, value in expected.items() if not isinstance(value, Default))
     expected_all_keys = set(expected.keys())
     config_keys = set(config.keys())
@@ -64,14 +76,15 @@ def _recursive_check(config, expected, verify_path, verify_out_path, path, raise
             if key in expected_all_keys:
                 unknown_keys.remove(key)
         if len(missing_keys) > 0 and len(unknown_keys) > 0:
-            _notif_error(f"Config file is invalid at '{path[1:]}'. missing keys: {missing_keys} || and have these keys that are "
+            _notif_error(f"Config file is invalid at '{path}'. missing keys: {missing_keys} || and have these keys that are "
                          f"unknown: {unknown_keys}", raise_type)
         elif len(missing_keys) > 0:
-            _notif_error(f"Config file is invalid at '{path[1:]}'. missing keys: {missing_keys}", raise_type)
+            _notif_error(f"Config file is invalid at '{path}'. missing keys: {missing_keys}", raise_type)
         elif len(unknown_keys) > 0:
-            _notif_error(f"Config file is invalid at '{path[1:]}'. have these keys that are unknown: {unknown_keys}", raise_type)
+            _notif_error(f"Config file is invalid at '{path}'. have these keys that are unknown: {unknown_keys}", raise_type)
 
     for key, value in expected.items():
+        tmp_path = f"{path}.{key}" if path else key
         if isinstance(value, Default):
             # Check if the key exists
             if key not in config:
@@ -86,20 +99,20 @@ def _recursive_check(config, expected, verify_path, verify_out_path, path, raise
             if value == "ipath" and verify_path:
                 if "/*" in config[key]:
                     if len(glob.glob(config[key], recursive = True)) == 0:
-                        _notif_error(f"Config file contains invalid input path at key: {key}", raise_type)
+                        _notif_error(f"Config file contains invalid input path at {tmp_path}", raise_type)
                 else:
                     if not os.path.exists(config[key]):
-                        _notif_error(f"Config file contains invalid input path at key: {key}", raise_type)
+                        _notif_error(f"Config file contains invalid input path at {tmp_path}", raise_type)
             elif value == "opath" and verify_out_path:
                 if not os.path.exists(config[key]):
-                    _notif_error(f"Config file contains invalid output path at key: {key}", raise_type)
+                    _notif_error(f"Config file contains invalid output path at {tmp_path}", raise_type)
         elif isinstance(value, dict):
-            _recursive_check(config[key], expected[key], verify_path, verify_out_path, f"{path}.{key}", raise_type)
+            _recursive_check(config[key], expected[key], tags, verify_path, verify_out_path, f"{path}.{key}" if path else key, raise_type)
         elif isinstance(value, ProfileType):
             for item in config[key]:
                 if not isinstance(item, value.T):
                     _notif_error(f"Config file has value of type {type(item)} where it is "
-                                             f"supposed to be {value.T} at key {key}.", raise_type)
+                                             f"supposed to be {value.T} at {tmp_path}", raise_type)
         elif isinstance(value, tuple):
             isOk = False
             for el_type in value:
@@ -108,31 +121,32 @@ def _recursive_check(config, expected, verify_path, verify_out_path, path, raise
 
             if not isOk:
                 _notif_error(f"Config file has value of type {type(config[key])} where it is "
-                                             f"supposed to be {value} at key {key}." , raise_type)
+                                             f"supposed to be {value} at {tmp_path}" , raise_type)
         elif hasattr(value, "__origin__") and value.__origin__ is Literal:
             allowed_values = get_args(value)  # tuple of allowed literal values
             if config[key] not in allowed_values:
                 _notif_error(f"Config file has value of '{config[key]}' where it is "
-                                             f"supposed to be one of {allowed_values} at key {key}.", raise_type)
+                                             f"supposed to be one of {allowed_values} at {tmp_path}", raise_type)
         else:
             if not isinstance(config[key], value) and config[key] is not None:
                 _notif_error(f"Config file has value of type {type(config[key])} where it is "
-                                                f"supposed to be {value} at key {key}.", raise_type)
+                                                f"supposed to be {value} at {tmp_path}", raise_type)
 
 
 
-def verify_config(config: dict, expected: dict, verify_path=True, verify_out_path=False,
+def verify_config(config: dict, expected: dict, tags: Dict[str, List[str]], verify_path=True, verify_out_path=False,
                   raise_type: RaiseType = RaiseType.ERROR):
     """
     This function will raise an exception if the given config file does not conform to the expected config structure.
     :param config: The parsed yaml config file
     :param expected: The expected structure (Dict with classes as value of keys)
+    :param tags: A dict that will be filled with parameters having special tags.
     :param verify_path: Whether to verify the input path
     :param verify_out_path: Whether to verify the output path
     :param raise_type: How to notify the user if the config file is invalid
     :return: None
     """
-    _recursive_check(config, expected, verify_path, verify_out_path, "", raise_type)
+    _recursive_check(config, expected, tags, verify_path, verify_out_path, "", raise_type)
 
 class Default:
     """
@@ -242,13 +256,17 @@ class _Config:
                 self.__running_stats[key] = {"write": 1, "read": 0}
                 self.__internal[key] = value
 
-    # @property
-    # def __dict__(self):
-    #     """
-    #     This method is used to be compatible with the vars() function
-    #     :return: A dictionary representation of itself
-    #     """
-    #     return self._todict()
+    def get_from_path(self, path2key: str):
+        """
+        Retrieve a value from the config file using a path-like key, separated by dots.
+        :param path2key: The path tp the key, can span across multiple levels using dots.
+        :return: The retrieved key if found, otherwise raises KeyError.
+        """
+        levels = path2key.split(".")
+        sub_config = self
+        for level in levels:
+            sub_config = sub_config[level]
+        return sub_config
 
     def dict(self):
         return self._todict()
@@ -444,8 +462,9 @@ class ConfigFile(_Config):
         with open(file_path, 'r') as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
 
+        self.tags: Dict[str, List[str]] = {}
         if config_format is not None:
-            verify_config(config, config_format, verify_path=verify_path, raise_type=error_notif)
+            verify_config(config, config_format, self.tags, verify_path=verify_path, raise_type=error_notif)
 
         if len(profiles) > 0:
             profiles = ProfileList(Profile(s) for s in profiles)
@@ -505,6 +524,20 @@ class ConfigFile(_Config):
                     if exit_on_error:
                         print(f"{Colors.error}Invalid key: '{path[-1]}' at '{key}'!  Impossible to override the config.{ResetColor()}")
                         exit(-1)
+
+    def get_tags(self, tag: str) -> Dict[str, Any]:
+        """
+        Retrieve all leaf parameters having the given tag. It returns a dictionary mapping the path to the parameter
+        value.
+        :param tag: The tag to retrieve.
+        :return: A dictionary mapping the path to the parameter value.
+        """
+        if tag not in self.tags:
+            raise KeyError(f"Tag '{tag}' not found in config file. Available tags: {list(self.tags.keys())}")
+        out = {}
+        for path in self.tags[tag]:
+            out[path] = self.get_from_path(path)
+        return out
 
     def __str__(self):
         s = super().__str__()
@@ -571,6 +604,19 @@ class NotInit:
     """
     def __init__(self):
         pass
+
+class Tag:
+    """
+    Wrap a leaf parameter with this class to tag it. Then, it can be easily retrieved with the `get_tag` method of the ConfigFile.
+    """
+    def __init__(self, value: Union[None, bool, str, int, float, list, tuple, 'Literal', Default, ProfileType], tag: str):
+        if isinstance(value, type):
+            if value.__name__ not in ["bool", "str", "int", "float", "list", "tuple"]:
+                raise TypeError(f"Tag value must be a type of bool, str, int, float, list or tuple. Got: {value.__name__}")
+        elif not isinstance(value, (Default, ProfileType)) and not _is_literal(value) and value is not None:
+            raise TypeError(f"Tag value must be None, bool, str, int, float, list, Literal, Default or Profile. Got: {type(value)}")
+        self.value = value
+        self.tag = tag
 
 class ConfigOption:
     def __init__(self, name: str):

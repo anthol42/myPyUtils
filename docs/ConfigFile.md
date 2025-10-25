@@ -161,6 +161,27 @@ config_format = ConfigFormat({
 config_format1 = config_format.get(option="Option1")
 config_format2 = config_format.get(option="Option2")
 ```
+
+### Tags
+You can optionally tag leaf keys in the `config_format` to make them easier to find. For example, you might have some 
+keys that represent hyperparameters that you need to optimize. In such case, you can tag these keys by wrapping their 
+type in a `Tag` object, and giving it a tag name. Later, you can retrieve all those keys by calling the 
+`get_tags` method of the `ConfigFile` object, and passing the tag name. This method will return a dictionary where the 
+keys are the tag name, and the value is the value of the key in the config file. Note that only leaf keys can be tagged.
+Example:
+```python
+from pyutils import Tag, ConfigFile
+expected_format = {
+    "key1": Tag(str, "hyper"),
+    "key2": int,
+    "key3": {
+        "keyA": str,
+        "keyB": Tag(float, "hyper")
+    },
+}
+file = ConfigFile("config.yml", config_format=expected_format)
+print(file.get_tags("hyper"))
+```
 ### Get statistics
 As said before, this class comes with a statistics tool that counts the number of access to each key. It can help you 
 see unused keys. To see this, you can simply print the statistics:
