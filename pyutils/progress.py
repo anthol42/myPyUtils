@@ -79,28 +79,30 @@ def format_pip_eta(self: 'progress'):
 
 
 # --------------------- DL progress bar CB--------------------- #
-def format_time_per_step(self: 'progress'):
-    """
-    Format in this style: 2ms/step
-    """
-    color = self.done_color if self.iter_ended else Colors.green
-    if color is None:
-        color = Colors.green
-    if self.ema == 0:
-        return f"{color}NA/step{ResetColor()}"
-    else:
-        time_per_step = self.ema
-        if time_per_step < 1e-6:
-            time_per_step *= 1e9
-            return f"{color}{time_per_step:.2f} ns/step{ResetColor()}"
-        elif time_per_step < 1e-3:
-            time_per_step *= 1e6
-            return f"{color}{time_per_step:.2f} µs/step{ResetColor()}"
-        elif time_per_step < 1:
-            time_per_step *= 1e3
-            return f"{color}{time_per_step:.2f} ms/step{ResetColor()}"
+def format_time_per_step(done_color: Optional[BaseColor] = Colors.success):
+    def cb(self: 'progress'):
+        """
+        Format in this style: 2ms/step
+        """
+        color = done_color if self.iter_ended else Colors.secondary
+        if color is None:
+            color = Colors.green
+        if self.ema == 0:
+            return f"{color}NA/step{ResetColor()}"
         else:
-            return f"{color}{time_per_step:.2f} s/step{ResetColor()}"
+            time_per_step = self.ema
+            if time_per_step < 1e-6:
+                time_per_step *= 1e9
+                return f"{color}{time_per_step:.2f} ns/step{ResetColor()}"
+            elif time_per_step < 1e-3:
+                time_per_step *= 1e6
+                return f"{color}{time_per_step:.2f} µs/step{ResetColor()}"
+            elif time_per_step < 1:
+                time_per_step *= 1e3
+                return f"{color}{time_per_step:.2f} ms/step{ResetColor()}"
+            else:
+                return f"{color}{time_per_step:.2f} s/step{ResetColor()}"
+    return cb
 
 def format_dl_eta(self: 'progress'):
     """
@@ -113,10 +115,10 @@ def format_dl_eta(self: 'progress'):
         if self.done_color is not None:
             return f"{self.done_color}{pretty_time_format(elapsed)}{ResetColor()}"
         else:
-            return f"{Colors.accent}{pretty_time_format(elapsed)}{ResetColor()}"
+            return f"{Colors.primary}{pretty_time_format(elapsed)}{ResetColor()}"
     else:
         eta = (self.total - self.count) * self.ema
-        return f"{Colors.accent}{pretty_time_format(eta)}{ResetColor()}"
+        return f"{Colors.primary}{pretty_time_format(eta)}{ResetColor()}"
 
 def format_sep(self: 'progress'):
     """
@@ -479,6 +481,10 @@ class progress:
         # Measure the duration of each steps
         self.prep_step_duration()
 
+        # Early return because we do not want to display the progress bar yet (If true)
+        if (datetime.now() - self.last_display).total_seconds() < self.refresh_rate and self.count < self.total:
+            return
+
         # Display progress bar
         if self.display:
             if self.count >= self.total:
@@ -535,22 +541,21 @@ def prange(*args, **kwargs):
 
 
 progress.set_config(
-    done_color=Colors.darken,
     type="dl",
-    cursors=(f">{Colors.darken}", ),
-    cu="=",
-    cd="-",
+    cursors=(f"{Colors.darken}╺", f"╸{Colors.darken}"),
+    cu="━",
+    cd="━",
     max_width=40,
     # refresh_rate=0.01,
     ignore_term_width="PYCHARM_HOSTED" in os.environ,
-    delim=(f"[{Colors.orange}", f"{ResetColor()}]"),
-    done_delim=(f"[{Colors.success}", f"{Colors.darken}]"),
-    done_charac=f"=",
+    delim=(f" {Colors.secondary}", f"{Colors.reset}"),
+    done_delim=(f" {Colors.success}", f"{Colors.reset}"),
+    done_charac=f"━",
     end="",
     post_cb=(
             format_total,
             format_dl_eta,
-            format_time_per_step,
+            format_time_per_step(Colors.success),
             format_sep,
             format_added_values
         )

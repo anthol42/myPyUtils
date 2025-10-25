@@ -1,7 +1,14 @@
 ## 0.2.0
+### Bugs Fixed
 - ```ConfigFile```: Fixed a debug print that was not removed
+- ```Progress bar```: Now, the refresh rate is considered when using the `update` method.
+
+### New Features
 - ```logger```: Now fully integrated with python's logger module + have default colored formatters
+- ```Progress bar```: Now use the Colors theme for the deep leanrning progress bar
+- ```Colors```: Added the primary color and secondary color to the default theme
 - 
+
 ## 0.1.0
 - ```Color```: Now themes have a `.reset` attribute by default
 - ```ConfigFile```: Now have config options: Can get different variant of a config format
