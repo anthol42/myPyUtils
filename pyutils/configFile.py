@@ -109,6 +109,11 @@ def _recursive_check(config, expected, verify_path, verify_out_path, path, raise
             if not isOk:
                 _notif_error(f"Config file has value of type {type(config[key])} where it is "
                                              f"supposed to be {value} at key {key}." , raise_type)
+        elif hasattr(value, "__origin__") and value.__origin__ is Literal:
+            allowed_values = get_args(value)  # tuple of allowed literal values
+            if config[key] not in allowed_values:
+                _notif_error(f"Config file has value of '{config[key]}' where it is "
+                                             f"supposed to be one of {allowed_values} at key {key}.", raise_type)
         else:
             if not isinstance(config[key], value) and config[key] is not None:
                 _notif_error(f"Config file has value of type {type(config[key])} where it is "

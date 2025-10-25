@@ -52,6 +52,8 @@ expected_format = {
 }
 config = ConfigFile("config.yml", config_format=expected_format)
 ```
+If your config must accept only a subset of values allowed by a type, you can use `Literal` from the `typing` module.
+
 Try to modify a key or a type, you will see that the class will print an error, and exit with the error code -1. You can
 also specify how to handle errors with the ```error_notif``` parameter. You can choose between raise, error and quit, or
 warn and continue. By default, the error and quit option is selected. You can select it from the enum ```RaiseType```.  

@@ -7,7 +7,7 @@
 - ```logger```: Now fully integrated with python's logger module + have default colored formatters
 - ```Progress bar```: Now use the Colors theme for the deep leanrning progress bar
 - ```Colors```: Added the primary color and secondary color to the default theme
-- 
+- ```ConfigFile```: Now support Literal type checking from the typing module
 
 ## 0.1.0
 - ```Color```: Now themes have a `.reset` attribute by default
