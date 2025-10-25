@@ -1,0 +1,39 @@
+[project]
+name = "antho-utils"
+version = "0.2.0"  # 🔸 You can replace this with a dynamic version read from pyutils/__version__.py (see below)
+description = "Useful utilities for python and datascience"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Anthony Lavertu", email = "alavertu2@gmail.com" }
+]
+keywords = [
+    "antho-utils", "utils", "utilities", "python", "helpers", "tools", "datascience"
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+dependencies = [
+    "PyYAML>=6.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/anthol42/myPyUtils/tree/main"
+Issues = "https://github.com/anthol42/myPyUtils/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+sources = ["src"]
+
+[tool.hatch.build.hooks.version]
+path = "src/pyutils/__version__.py"
+
