@@ -37,3 +37,12 @@ sources = ["src"]
 [tool.hatch.build.hooks.version]
 path = "src/pyutils/__version__.py"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyutils"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/deepboard",
+  "pyproject.toml",
+  "README.md"
+]
