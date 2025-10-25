@@ -1,224 +1,98 @@
-from .color import BaseColor, ResetColor
-from enum import Enum
-from typing import *
-import sys
+import logging
 import inspect
+import sys
+from typing import Callable
 from datetime import datetime
+from pyutils.color import Colors
 
-# Static var counting the number of loggers
-NUM_LOGGERS = 0
-class LoggerType(Enum):
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"    # Non fatal error
+BASE_FORMATTERS = {
+    'name': lambda record: record.name,
+    'level': lambda record: record.levelname,
+    'time': lambda record: str(datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S')),
+    'origin': lambda record: f'from {record.pathname} -- line no {record.lineno}',
+    'msg': lambda record: record.msg,
+}
 
+class FormatterConfig:
+    def __init__(self, fmt: str, formatters: dict[str, Callable[[logging.LogRecord], str]] = BASE_FORMATTERS):
+        self.fmt = fmt
+        self.formatters = formatters
 
-class LogKwargs:
-    def __init__(self, sep: str = ' ', start: str = '',
-                 end: str = '\n', file=sys.stdout, flush=False, color: Optional[BaseColor] = None):
-        self.sep = sep
-        self.end = end
-        self.start = start
-        self.file = file
-        self.flush = flush
-        self.color = color
+    def format(self, record: logging.LogRecord) -> str:
+        formatted_parts = {}
+        for name, cb in self.formatters.items():
+            formatted_parts[name] = cb(record)
+        return self.fmt.format(**formatted_parts)
 
-    def get(self):
-        return {"sep": self.sep, "end": self.end, "file": self.file, "flush": self.flush}
+class Formatter(logging.Formatter):
+    def __init__(self):
+        super().__init__("")
+        self.debug_config = FormatterConfig(fmt=f'[{Colors.orange}{{level}}{Colors.reset} — {Colors.darken}{{time}}{Colors.reset}] {{msg}} {Colors.darken}({{name}})\n\t{{origin}}{Colors.reset}')
+        self.info_config = FormatterConfig(fmt=f'{Colors.green}[{{level}}]{Colors.reset} {{msg}} [{Colors.darken}{{time}}{Colors.reset}]')
+        self.warning_config = FormatterConfig(fmt=f'{Colors.warning}[{{level}}]{Colors.reset} {Colors.darken}{{time}}{Colors.reset} {{msg}}{Colors.darken} | {{name}}{Colors.reset}')
+        self.error_config = FormatterConfig(fmt=f'{Colors.error}[{{level}}]{Colors.reset} {Colors.darken}{{time}}  |  {{origin}}{Colors.reset}\n\t {{msg}}')
+        self.critical_config = self.error_config
 
-def get_frames():
-    current_frame = inspect.currentframe()
-    frames = [current_frame]
-    while current_frame.f_back is not None:
-        current_frame = current_frame.f_back
-        frames.append(current_frame)
+    def format(self, record: logging.LogRecord):
+        match record.levelno:
+            case logging.DEBUG:
+                return self.debug_config.format(record)
+            case logging.INFO:
+                return self.info_config.format(record)
+            case logging.WARNING:
+                return self.warning_config.format(record)
+            case logging.ERROR:
+                return self.error_config.format(record)
+            case logging.CRITICAL:
+                return self.critical_config.format(record)
+            case _:
+                return super().format(record)
 
-    return frames
-class LogConfig:
-    def __init__(self, **kwargs):
-        self.init(**kwargs)
+formater = Formatter()
 
-    def init(self, console: bool = True, show_name: bool = True, show_type: bool = True, show_time: bool = True,
-                 show_origin: bool = True,
-                 name_formatter: str = "<CAPS>{}", type_formatter: str = "<CAPS>[{}]",
-                 time_formatter: Callable[[datetime], Tuple[str, bool]] = lambda x: (f'[{x}]', False),
-                 origin_formatter: str = "<END>From: {} -- line no {}",
-                 start_sep: str = " -- ", end_sep: str = " | "):
-        self.console = console
-        self.show_name = show_name
-        self.show_type = show_type
-        self.show_time = show_time
-        self.show_origin = show_origin
-        self.name_formatter = name_formatter
-        self.type_formatter = type_formatter
-        self.time_formatter = time_formatter
-        self.origin_formatter = origin_formatter
-        self.start_sep = start_sep
-        self.end_sep = end_sep
+def _get_caller_qualname(level: int = 1):
+    # Get caller's frame
+    frame = inspect.currentframe()
+    for _ in range(level):
+        frame = frame.f_back
+    code = frame.f_code
+    module = inspect.getmodule(frame)
+    module_name = module.__name__ if module else "<unknown>"
 
-    @staticmethod
-    def get_modifiers(s: str):
-        mods = {
-            "caps": False,
-            "end": False
-        }
-        if "<CAPS>" in s:
-            mods["caps"] = True
-        if "<END>" in s:
-            mods["end"] = True
-        return mods
-    @staticmethod
-    def clear_modifiers(s: str):
-        return s.replace("<CAPS>", "").replace("<END>", "")
-    @staticmethod
-    def apply_mods(s, mods):
-        s = s.upper() if mods["caps"] else s
-        return s
+    # Get the function's qualified name (includes class + nested defs)
+    qualname = code.co_qualname.replace(".<locals>", "")
+    if qualname == "<module>":
+        return module_name
+    else:
+        return f"{module_name}.{qualname}"
 
-    def format_string(self, s, formatter) -> Tuple[str, bool]:
-        """
-        Format the name attribute
-        Returns: The formated name, boolean representing whether it should be appended (END)
-        """
-        mods = self.get_modifiers(formatter)
-        formatter = self.clear_modifiers(formatter)
-        s = self.apply_mods(s, mods)
-        return formatter.format(s), mods["end"]
+def _setup_logger(logger: logging.Logger):
+    if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(formater)
+        logger.addHandler(handler)
 
-    def format_time(self, time: datetime) -> Tuple[str, bool]:
-        """
-        Format the time attribute
-        Returns: The formated time, boolean representing whether it should be appended (END)
-        """
-        return self.time_formatter(time)
-    def format_origin(self) -> Tuple[str, bool]:
-        # Get the frames
-        frames = get_frames()
-        caller_frame = frames[4] # Number is the level
-        filename = caller_frame.f_code.co_filename
-        line_number = caller_frame.f_lineno
+def debug(msg: str):
+    logger = logging.getLogger(_get_caller_qualname(2))
+    _setup_logger(logger)
+    logger.debug(msg, stacklevel=2)
 
-        # Format the string
-        formatter = self.origin_formatter
-        mods = self.get_modifiers(formatter)
-        formatter = self.clear_modifiers(formatter)
-        file = self.apply_mods(filename, mods)
-        line = self.apply_mods(str(line_number), mods)
-        s = formatter.format(file, line)
-        return s, mods["end"]
+def info(msg: str):
+    logger = logging.getLogger(_get_caller_qualname(2))
+    _setup_logger(logger)
+    logger.info(msg, stacklevel=2)
 
-class FatalFailure(Exception):
-    pass
-class Logger:
-    """
-    Class to create a callback function that has a similar interface to the print function. However, you can customize
-    how it prints the data. You can also log to a file if needed, where all the logs are stored.
-    """
-    def __init__(self, T: LoggerType, logfile: Optional[str] = None, name: Optional[str] = None,
-                 logColor: Optional[BaseColor] = None):
-        """
-        Initialize the logger
-        :param T: The type of the logger
-        :param logfile: The file to log to, if None, it will not log to a file
-        :param name: The name of the logger. If None, it will be Logger_{NUM_LOGGERS}
-        :param logColor: The color to log the text, by default.
-        """
-        global NUM_LOGGERS
-        self.T = T
-        self.logfile = logfile
-        self.console_file = sys.stdout
-        if name is None:
-            name = f"Logger_{NUM_LOGGERS}"
-        self.name = name
-        self.logColor = logColor
-        self.CONFIG = LogConfig()
+def warning(msg: str):
+    logger = logging.getLogger(_get_caller_qualname(2))
+    _setup_logger(logger)
+    logger.warning(msg, stacklevel=2)
 
-        NUM_LOGGERS += 1
+def error(msg: str):
+    logger = logging.getLogger(_get_caller_qualname(2))
+    _setup_logger(logger)
+    logger.error(msg, stacklevel=2)
 
-    def config(self, show_name: bool = True, show_type: bool = True, show_time: bool = True, show_origin: bool = False,
-               name_formatter: str = "<CAPS>{}", type_formatter: str = "<CAPS>[{}]",
-               time_formatter: Callable[[datetime], Tuple[str, bool]] = lambda x: (f'[{x}]', False),
-               origin_formatter: str = "<END>From: {} -- line no {}",
-               start_sep: str = " -- ", end_sep: str = " | ", console: bool = True):
-        """
-        Configure the logger.
-        # Formatters
-        You can specify formatters for the name, type, time, and origin of the logger. The formatters are strings
-        that can contains special keywords that will define how the string is formatted. The special keywords are:
-        - <CAPS>: Capitalize the string
-        - <END>: Append the string to the end of the log
-        :param show_name: Show the name of the logger
-        :param show_type: Show the type of the logger
-        :param show_time: Show the time of the log
-        :param show_origin: Show the origin of the log: The file and the line number
-        :param name_formatter: The format of the name of the logger
-        :param type_formatter: The format of the type of the logger
-        :param time_formatter: The format of the time of the logger
-        :param origin_formatter: The format of the origin of the logger
-        :param start_sep: The separator between the generic info such as the name, the date, etc, and the start of the log
-        :param end_sep: The separator between the log and the generic info that are appended.
-        :param console: Whether to print to the console or not.
-        :return: None
-        """
-        self.CONFIG.init(console, show_name, show_type, show_time, show_origin, name_formatter, type_formatter, time_formatter,
-                        origin_formatter, start_sep, end_sep)
-    def decorate(self, s: str):
-        inserts, appends = [], []
-        if self.CONFIG.show_name:
-            name, end = self.CONFIG.format_string(self.name, self.CONFIG.name_formatter)
-            if end:
-                appends.append(name)
-            else:
-                inserts.append(name)
-        if self.CONFIG.show_type:
-            type, end = self.CONFIG.format_string(self.T.value, self.CONFIG.type_formatter)
-            if end:
-                appends.append(type)
-            else:
-                inserts.append(type)
-        if self.CONFIG.show_time:
-            time, end = self.CONFIG.format_time(datetime.now())
-            if end:
-                appends.append(time)
-            else:
-                inserts.append(time)
-        if self.CONFIG.show_origin:
-            origin, end = self.CONFIG.format_origin()
-            if end:
-                appends.append(origin)
-            else:
-                inserts.append(origin)
-
-        s = " ".join(inserts) + self.CONFIG.start_sep + s
-        if len(appends) > 0:
-            s = s + self.CONFIG.end_sep + " ".join(appends)
-        return s
-
-    def __call__(self, *args, **kwargs):
-        """
-        Same signature as the print function.
-        Will print the log to the console and to the file if needed, according to the configuration format.
-        """
-        kwargs = LogKwargs(**kwargs)
-
-        # Format the string
-        original_string = kwargs.start + kwargs.sep.join([str(arg) for arg in args])
-        # Color the string if needed
-        if self.logColor is not None:
-            colored_string = f"{self.logColor}{original_string}{ResetColor()}"
-        else:
-            colored_string = original_string
-
-        s_colored = self.decorate(colored_string) + kwargs.end
-        s = self.decorate(original_string) + kwargs.end
-
-        # Log to console if needed
-        if self.CONFIG.console:
-            if self.T == LoggerType.ERROR:
-                print(s_colored, sep="", end="", flush=kwargs.flush, file=sys.stderr)
-            else:
-                print(s_colored, sep="", end="", flush=kwargs.flush)
-
-        if self.logfile is not None:
-            with open(self.logfile, "a") as f:
-                f.write(s)
+def critical(msg: str):
+    logger = logging.getLogger(_get_caller_qualname(2))
+    _setup_logger(logger)
+    logger.critical(msg, stacklevel=2)

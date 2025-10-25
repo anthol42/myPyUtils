@@ -22,14 +22,16 @@ HPC server, I do not want to make two configurations files that are almost ident
 in the same configuration file with different paths or values, and use the appropriate profile depending on the machine.
 
 ### Logger
-A simple implementation of a logger that is easy to use, and is highly customizable. It integrates well with the Color 
-api. I usually define three loggers: log, warning and error. The log logger is used for general information. The warning
-logger is used for unusual patterns that could be bugs, but won't crash the program. Finally, the error logger is used 
-for non-blocking errors that should be looked into. Each logger has its own formatting rules. You can create as many 
-different loggers as you like.  Once created, a logger can be used just like python's print function. Example:
+A simple wrapper of the python logging api. It adds colored formatters out of the box, and is easy to configure. It 
+also reduce the number of lines of code needed to log.
 ```python
-log = Logger(...)
-log("This is a log message")
+from pyutils import logger
+
+logger.debug("My debug message")
+logger.info("My info message")
+logger.warning("My warning message")
+logger.error("My error message")
+logger.critical("My critical message")
 ```
 
 ### Progress
