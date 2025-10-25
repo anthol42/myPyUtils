@@ -74,6 +74,7 @@ if __name__ == "__main__":
 - [ConfigFile](ConfigFile.md)
 - [Logger](Logger.md)
 - [Progress](Progress.md)
+- [Spinner](Spinner.md)
 
 ## Questions?
 If you have any questions, or you find bugs, feel free to ask them in the issues section of the repository. I will be 

@@ -9,6 +9,7 @@
 - ```Colors```: Added the primary color and secondary color to the default theme
 - ```ConfigFile```: Now support Literal type checking from the typing module
 - ```ConfigFile```: Now support tagged parameters. You can tag parameters in the config format and then get all parameters with a specific tag.
+- ```Spinner```: New undefined progress api 🎉
 
 ## 0.1.0
 - ```Color```: Now themes have a `.reset` attribute by default

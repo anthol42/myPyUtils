@@ -2,5 +2,5 @@
 - [X] Change default theme of deep learning progress bar to use Colors theme
 - [X] Add the possibility to check for literals in ConfigFile
 - [X] Make configFile possible to automatically sync with the resultTable. We can specify tags to field in the ConfigFormat. Then call a method that return all fields of this tag
-- [ ] Add an undefined progress bar with ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏ and -\|/ characters and 🌑🌒🌓🌔🌕🌖🌗🌘
+- [X] Add an undefined progress bar with ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏ and -\|/ characters and 🌑🌒🌓🌔🌕🌖🌗🌘
 - [ ] Convert this project to a uv project
