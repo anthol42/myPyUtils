@@ -1,6 +1,6 @@
 [project]
 name = "antho-utils"
-version = "0.2.0"  # 🔸 You can replace this with a dynamic version read from pyutils/__version__.py (see below)
+version = "0.2.1"
 description = "Useful utilities for python and datascience"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -32,17 +32,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build]
-sources = ["src"]
+only-include = ["src"]
 
 [tool.hatch.build.hooks.version]
 path = "src/pyutils/__version__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/pyutils"]
+sources = ["src"]
 
 [tool.hatch.build.targets.sdist]
-include = [
-  "src/deepboard",
-  "pyproject.toml",
-  "README.md"
-]
+only-include = ["src"]
